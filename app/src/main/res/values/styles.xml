@@ -1,0 +1,23 @@
+<resources>
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary color -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- Status and action bar color (white) -->
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar">true</item>
+
+        <!-- Apply custom button style to all buttons -->
+        <item name="buttonStyle">@style/CustomButton</item>
+    </style>
+
+    <!-- Custom button style with Windows logo color -->
+    <style name="CustomButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:background">@drawable/gradient_button</item>
+        <item name="android:textColor">@android:color/black</item>
+    </style>
+</resources>

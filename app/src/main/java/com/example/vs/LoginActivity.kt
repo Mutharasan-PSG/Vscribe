@@ -1,5 +1,6 @@
 package com.example.vs
 
+import User
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -72,7 +73,12 @@ class LoginActivity : AppCompatActivity() {
                     // Sign-in successful
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null) {
-                        val userDetails = User(user.displayName, user.email, user.photoUrl?.toString())
+                        val userDetails = User(
+                            id = user.uid, // Assuming UID as ID
+                            name = user.displayName.toString(),
+                            email = user.email.toString(),
+                            photoUrl = user.photoUrl?.toString()
+                        )
                         sessionManager.setLoggedIn(true) // Update login status
                         sessionManager.saveUserDetails(userDetails)
 
@@ -99,9 +105,5 @@ class LoginActivity : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e("LoginActivity", "Failed to save user data: ${e.message}")
             }
-    }
-
-    companion object {
-        private const val RC_SIGN_IN = 9001
     }
 }

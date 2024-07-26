@@ -1,0 +1,9 @@
+<resources>
+    <string-array name="languages_array">
+        <item>English</item>
+        <item>Tamil</item>
+        <item>Telugu</item>
+        <item>Malayalam</item>
+        <item>Hindi</item>
+    </string-array>
+</resources>

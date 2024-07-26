@@ -11,4 +11,22 @@
     <string name="user_details">User Details</string>
     <string name="sign_in_with_google">Sign in with Google</string>
     <string name="download_section">Download Section</string>
+
+        <string-array name="filter_options">
+            <item>Date</item>
+            <item>Month</item>
+            <item>Year</item>
+            <item>File Type</item>
+            <item>Ascending</item>
+            <item>Descending</item>
+            <item>File Type</item>
+            <item>Numbers First</item>
+        </string-array>
+
+    <string-array name="file_type_options">
+        <item>TXT</item>
+        <item>DOCX</item>
+        <item>PDF</item>
+    </string-array>
+
 </resources>

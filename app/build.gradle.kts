@@ -47,12 +47,22 @@ android {
 
 dependencies {
 
+
+    // Apache POI for DOCX
+    implementation ("org.apache.poi:poi:5.2.3")
+    implementation ("org.apache.poi:poi-ooxml:5.2.3")
+
+    // iText for PDF
+    implementation ("com.itextpdf:itext7-core:7.2.6")
     implementation ("androidx.fragment:fragment-ktx:1.8.1")
 
     implementation ("com.github.bumptech.glide:glide:4.15.1")
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.play.services.cast.framework)
+    implementation(libs.androidx.legacy.support.v4)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.common)
     kapt ("com.github.bumptech.glide:compiler:4.15.1")
     implementation ("com.squareup.picasso:picasso:2.71828")
 

@@ -1,5 +1,6 @@
 package com.example.vs
 
+import User
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -25,6 +26,11 @@ class SessionManager(context: Context) {
     fun getUserDetails(): User? {
         val userJson = prefs.getString(USER_DETAILS, null)
         return gson.fromJson(userJson, User::class.java)
+    }
+
+    // Retrieve user ID from SharedPreferences
+    fun getUserId(): String? {
+        return getUserDetails()?.id
     }
 
     // Clear all session data

@@ -152,10 +152,12 @@ class SpeechToTextActivity : AppCompatActivity() {
         val currentMonth = sdf.format(Date())
 
         val fileId = database.push().key ?: return
+        val userId = SessionManager(this).getUserId() ?: "unknown"
         val fileData = mapOf(
             "fileId" to fileId,
             "fileName" to "$fileName.txt",
-            "content" to transcribedText
+            "content" to transcribedText,
+            "userId" to userId  // Add userId to the file data
         )
         database.child(currentMonth).child(fileId).setValue(fileData).addOnCompleteListener { task ->
             if (task.isSuccessful) {
@@ -167,4 +169,5 @@ class SpeechToTextActivity : AppCompatActivity() {
             }
         }
     }
+
 }

@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- res/values/colors.xml -->
 
+        <color name="textPrimary">#000000</color> <!-- Black color -->
+       White color -->
+
+        <color name="history_item_color">#808080</color> <!-- Grey color -->
+
+    <color name="textSecondary">#757575</color> <!-- or any color you want -->
+    <color name="buttonText">#0000FF</color> <!-- or any color you want -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 

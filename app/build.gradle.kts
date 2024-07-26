@@ -46,8 +46,17 @@ android {
 }
 
 dependencies {
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.4")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // RecyclerView
+//    implementation ("androidx.recyclerview:recyclerview:1.3.2")
 
+    implementation ("androidx.room:room-ktx:2.6.1")
+    // Room Database
+    implementation ("androidx.room:room-runtime:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
 
+    implementation ("net.objecthunter:exp4j:0.4.8")
     // Apache POI for DOCX
     implementation ("org.apache.poi:poi:5.2.3")
     implementation ("org.apache.poi:poi-ooxml:5.2.3")

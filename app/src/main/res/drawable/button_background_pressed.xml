@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#1565C0" /> <!-- Darker color for pressed state -->
+    <corners android:radius="4dp" /> <!-- Same corner radius as normal state -->
+</shape>

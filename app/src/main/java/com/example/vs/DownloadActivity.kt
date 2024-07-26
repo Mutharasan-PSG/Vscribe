@@ -61,8 +61,9 @@ class DownloadActivity : AppCompatActivity() {
     private fun loadFilesFromFirebase() {
         val sdf = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
         val currentMonth = sdf.format(Date())
+        val currentUserId = SessionManager(this).getUserId() ?: "unknown"
 
-        database.child(currentMonth).addListenerForSingleValueEvent(object : ValueEventListener {
+        database.child(currentMonth).orderByChild("userId").equalTo(currentUserId).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 fileList.clear()
                 for (fileSnapshot in snapshot.children) {
@@ -77,6 +78,7 @@ class DownloadActivity : AppCompatActivity() {
             }
         })
     }
+
 
     private fun setupListView() {
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, fileList.map { it["fileName"] ?: "Unknown" })

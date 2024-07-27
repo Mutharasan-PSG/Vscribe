@@ -1,8 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/Vscribe"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vscribe"
+        android:textSize="30sp"
+        android:textColor="@color/BLUE"
+        android:layout_marginTop="5dp"
+        android:layout_margin="11dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="5dp"
+        />
 
     <LinearLayout
         android:id="@+id/item_speech_to_text"
@@ -10,20 +22,21 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
+        android:layout_below="@id/Vscribe"
         android:background="@drawable/rectangle_shape"
-        android:layout_marginBottom="16dp"
-        android:layout_alignParentTop="true">
+        android:layout_margin="16dp">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_speech_to_text" />
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/st"
+            android:scaleType="fitCenter"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Speech to Text"
+            android:text="SPEECH TO TEXT"
             android:textSize="18sp" />
     </LinearLayout>
 
@@ -34,19 +47,20 @@
         android:orientation="horizontal"
         android:padding="16dp"
         android:background="@drawable/rectangle_shape"
-        android:layout_marginBottom="16dp"
+        android:layout_margin="16dp"
         android:layout_below="@id/item_speech_to_text">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_voice_calculator" />
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/voicecalculator"
+            android:scaleType="fitCenter"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Voice Calculator"
+            android:text="VOICE CALCULATOR"
             android:textSize="18sp" />
     </LinearLayout>
 
@@ -57,19 +71,20 @@
         android:orientation="horizontal"
         android:padding="16dp"
         android:background="@drawable/rectangle_shape"
-        android:layout_marginBottom="16dp"
+        android:layout_margin="16dp"
         android:layout_below="@id/item_voice_calculator">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_voice_to_do_list" />
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/list"
+            android:scaleType="fitCenter" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Voice To-Do List"
+            android:text="VOICE TO-DO LIST"
             android:textSize="18sp" />
     </LinearLayout>
 
@@ -82,13 +97,14 @@
 
     <ImageButton
         android:id="@+id/btn_speech"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_width="62dp"
+        android:layout_height="53dp"
         android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="56dp"
+        android:layout_marginBottom="86dp"
         android:background="@null"
-        android:src="@drawable/ic_mic"
-        android:contentDescription="Speech Button" />
+        android:contentDescription="Speech Button"
+        android:scaleType="fitCenter"
+        android:src="@drawable/mic" />
 </RelativeLayout>

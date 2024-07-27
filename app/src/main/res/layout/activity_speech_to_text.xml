@@ -5,53 +5,93 @@
     android:layout_height="match_parent"
     tools:context=".SpeechToTextActivity">
 
-    <Spinner
-        android:id="@+id/spinner_language"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_centerHorizontal="true" />
-
-    <Button
-        android:id="@+id/button_refresh"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Refresh"
-        android:layout_below="@id/spinner_language"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp" />
-
-    <TextView
-        android:id="@+id/text_view_transcribed"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/button_refresh"
-        android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:hint="Transcribed text will appear here"
-        android:textSize="16sp"
-        android:padding="8dp"
-        android:background="#f0f0f0" />
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true">
 
-    <Button
-        android:id="@+id/button_save_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Save Text"
-        android:layout_below="@id/text_view_transcribed"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/V_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SPEECH TO TEXT"
+                android:textSize="24sp"
+                android:textColor="@color/BLUE"
+                android:layout_marginTop="5dp"
+                android:layout_margin="11dp"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="5dp" />
+
+            <Spinner
+                android:id="@+id/spinner_language"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/V_text"
+                android:layout_alignParentStart="true"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp" />
+
+            <ImageButton
+                android:id="@+id/button_refresh"
+                android:layout_width="35dp"
+                android:layout_height="30dp"
+                android:layout_below="@id/V_text"
+                android:layout_toEndOf="@id/spinner_language"
+                android:layout_marginTop="16dp"
+                android:layout_marginLeft="209dp"
+                android:background="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/refreshhh"
+                android:contentDescription="Refresh Button" />
+
+            <ScrollView
+                android:id="@+id/scroll_view_transcribed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/button_refresh"
+                android:layout_marginTop="16dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="#f0f0f0">
+
+                <TextView
+                    android:id="@+id/text_view_transcribed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Transcribed text will appear here"
+                    android:textSize="16sp"
+                    android:padding="8dp" />
+            </ScrollView>
+
+            <Button
+                android:id="@+id/button_save_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Save Text"
+                android:layout_below="@id/scroll_view_transcribed"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="16dp" />
+        </RelativeLayout>
+    </ScrollView>
 
     <ImageButton
         android:id="@+id/btn_speech"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_width="62dp"
+        android:layout_height="53dp"
         android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="56dp"
+        android:layout_marginBottom="36dp"
         android:background="@null"
-        android:src="@drawable/ic_mic"
-        android:contentDescription="Speech Button" />
+        android:contentDescription="Speech Button"
+        android:scaleType="fitCenter"
+        android:src="@drawable/mic" />
+
 </RelativeLayout>

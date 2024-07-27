@@ -59,13 +59,20 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         database = FirebaseDatabase.getInstance().reference
 
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
+            override fun onReadyForSpeech(params: Bundle?) {
+                startButton.setImageResource(R.drawable.voice_frequency)
+            }
+            override fun onBeginningOfSpeech() {
+                startButton.setImageResource(R.drawable.voice_frequency)
+            }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() {
+                startButton.setImageResource(R.drawable.mic)
+            }
             override fun onError(error: Int) {
                 Toast.makeText(requireContext(), "Error recognizing speech", Toast.LENGTH_SHORT).show()
+                startButton.setImageResource(R.drawable.mic)
             }
 
             override fun onResults(results: Bundle?) {
@@ -77,6 +84,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                         handleInput(input)
                     }
                 }
+                startButton.setImageResource(R.drawable.mic)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}
@@ -101,7 +109,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         if (dialog != null) {
             val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
             val behavior = BottomSheetBehavior.from(bottomSheet)
-            bottomSheet.layoutParams.height = (resources.displayMetrics.heightPixels * 0.6).toInt()
+            bottomSheet.layoutParams.height = (resources.displayMetrics.heightPixels * 0.8).toInt()
             behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }

@@ -36,6 +36,7 @@ class HomeActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onBeginningOfSpeech() {
@@ -48,10 +49,12 @@ class HomeActivity : AppCompatActivity() {
 
             override fun onEndOfSpeech() {
                 Log.d("SpeechRecognizer", "End of speech")
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onError(error: Int) {
                 Log.e("SpeechRecognizer", "Error: $error")
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onResults(results: Bundle?) {
@@ -59,6 +62,7 @@ class HomeActivity : AppCompatActivity() {
                     val recognizedText = resultList[0]
                     handleSpeechResult(recognizedText)
                 }
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}

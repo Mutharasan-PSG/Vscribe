@@ -8,13 +8,14 @@
         <color name="history_item_color">#808080</color> <!-- Grey color -->
 
     <color name="textSecondary">#757575</color> <!-- or any color you want -->
-    <color name="buttonText">#0000FF</color> <!-- or any color you want -->
+    <color name="buttonText">#2B8CFF</color> <!-- or any color you want -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
     <color name="blue">#0000FF</color>
+    <color name="BLUE">#2B8CFF</color>
 
-        <!-- Windows logo color for buttons -->
+    <!-- Windows logo color for buttons -->
         <color name="colorPrimary">#0078D4</color>
 
         <!-- Darker shade of primary color -->

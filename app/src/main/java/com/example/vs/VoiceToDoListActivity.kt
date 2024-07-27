@@ -50,13 +50,20 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech = TextToSpeech(this, this)
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
+            override fun onReadyForSpeech(params: Bundle?) {
+                speechButton.setImageResource(R.drawable.voice_frequency)
+            }
+            override fun onBeginningOfSpeech() {
+                speechButton.setImageResource(R.drawable.voice_frequency)
+            }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() {
+                speechButton.setImageResource(R.drawable.mic)
+            }
             override fun onError(error: Int) {
                 Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech", Toast.LENGTH_SHORT).show()
+                speechButton.setImageResource(R.drawable.mic)
             }
 
             override fun onResults(results: Bundle?) {
@@ -67,6 +74,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                         handleTaskInput(input)
                     }
                 }
+                speechButton.setImageResource(R.drawable.mic)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}

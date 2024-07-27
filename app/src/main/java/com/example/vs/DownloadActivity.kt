@@ -11,7 +11,6 @@ import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.SearchView
@@ -35,13 +34,14 @@ class DownloadActivity : AppCompatActivity() {
 
     private lateinit var listViewFiles: ListView
     private lateinit var searchView: SearchView
-    private lateinit var buttonRefresh: Button
+    private lateinit var buttonRefresh: ImageButton
     private lateinit var spinnerFilter: Spinner
     private lateinit var database: DatabaseReference
     private var fileList: MutableList<Map<String, String>> = mutableListOf()
     private var adapter: ArrayAdapter<String>? = null
     private var fileContentToSave: String = ""
     private lateinit var speechRecognizer: SpeechRecognizer
+    private lateinit var btnSpeech: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +51,7 @@ class DownloadActivity : AppCompatActivity() {
         searchView = findViewById(R.id.search_view)
         buttonRefresh = findViewById(R.id.button_refresh)
         spinnerFilter = findViewById(R.id.spinner_filter)
+        btnSpeech = findViewById(R.id.btn_speech)
 
         // Initialize Firebase
         database = FirebaseDatabase.getInstance().reference.child("Files")
@@ -69,10 +70,12 @@ class DownloadActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -81,10 +84,12 @@ class DownloadActivity : AppCompatActivity() {
 
             override fun onEndOfSpeech() {
                 Log.d("SpeechRecognizer", "End of speech")
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onError(error: Int) {
                 Log.e("SpeechRecognizer", "Error: $error")
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onResults(results: Bundle?) {
@@ -92,6 +97,7 @@ class DownloadActivity : AppCompatActivity() {
                     val recognizedText = resultList[0]
                     handleSpeechResult(recognizedText)
                 }
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}
@@ -282,11 +288,12 @@ class DownloadActivity : AppCompatActivity() {
     private fun setupRefreshButton() {
         buttonRefresh.setOnClickListener {
             loadFilesFromFirebase()
+            Toast.makeText(this, "Refreshing the files", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun setupFilterSpinner() {
-        val filters = listOf("No Filter", "Date", "Month", "Year", "File Type", "Ascending", "Descending", "Numbers First")
+        val filters = listOf("Filter", "Date", "Month", "Year", "File Type", "Ascending", "Descending", "Numbers First")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filters)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFilter.adapter = adapter

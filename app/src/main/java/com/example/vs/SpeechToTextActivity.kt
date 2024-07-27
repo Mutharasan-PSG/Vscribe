@@ -27,7 +27,7 @@ class SpeechToTextActivity : AppCompatActivity() {
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var textViewTranscribed: TextView
     private lateinit var buttonSaveText: Button
-    private lateinit var buttonRefresh: Button
+    private lateinit var buttonRefresh: ImageButton
     private lateinit var selectedLanguage: String
     private lateinit var database: DatabaseReference
     private lateinit var btnSpeech: ImageButton
@@ -58,6 +58,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         btnSpeech.setOnClickListener { startSpeechRecognition() }
 
         buttonRefresh.setOnClickListener {
+            Toast.makeText(this, "Listening your speech", Toast.LENGTH_SHORT).show()
             textViewTranscribed.text = ""
             startSpeechRecognition()
         }
@@ -78,12 +79,20 @@ class SpeechToTextActivity : AppCompatActivity() {
     private fun startSpeechRecognition() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {}
-            override fun onBeginningOfSpeech() {}
+            override fun onReadyForSpeech(params: Bundle?) {
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
+            }
+            override fun onBeginningOfSpeech() {
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
+            }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
-            override fun onError(error: Int) {}
+            override fun onEndOfSpeech() {
+                btnSpeech.setImageResource(R.drawable.mic)
+            }
+            override fun onError(error: Int) {
+                btnSpeech.setImageResource(R.drawable.mic)
+            }
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
@@ -95,6 +104,7 @@ class SpeechToTextActivity : AppCompatActivity() {
                     }
                     handleNavigationCommands(spokenText)
                 }
+                btnSpeech.setImageResource(R.drawable.mic)
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}
@@ -108,6 +118,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         }
 
         speechRecognizer.startListening(intent)
+
     }
 
     private fun handleNavigationCommands(spokenText: String) {

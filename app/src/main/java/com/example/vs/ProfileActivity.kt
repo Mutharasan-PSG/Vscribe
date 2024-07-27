@@ -25,9 +25,11 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var btnSpeech: ImageButton
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
+        btnSpeech = findViewById(R.id.btn_speech)
 
         sessionManager = SessionManager(this)
 
@@ -68,10 +70,12 @@ class ProfileActivity : AppCompatActivity() {
             speechRecognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     Log.d("SpeechRecognizer", "Ready for speech")
+                    btnSpeech.setImageResource(R.drawable.voice_frequency)
                 }
 
                 override fun onBeginningOfSpeech() {
                     Log.d("SpeechRecognizer", "Beginning of speech")
+                    btnSpeech.setImageResource(R.drawable.voice_frequency)
                 }
 
                 override fun onRmsChanged(rmsdB: Float) {}
@@ -80,10 +84,12 @@ class ProfileActivity : AppCompatActivity() {
 
                 override fun onEndOfSpeech() {
                     Log.d("SpeechRecognizer", "End of speech")
+                    btnSpeech.setImageResource(R.drawable.mic)
                 }
 
                 override fun onError(error: Int) {
                     Log.e("SpeechRecognizer", "Error: $error")
+                    btnSpeech.setImageResource(R.drawable.mic)
                 }
 
                 override fun onResults(results: Bundle?) {
@@ -91,6 +97,7 @@ class ProfileActivity : AppCompatActivity() {
                         val recognizedText = resultList[0]
                         handleSpeechResult(recognizedText)
                     }
+                    btnSpeech.setImageResource(R.drawable.mic)
                 }
 
                 override fun onPartialResults(partialResults: Bundle?) {}

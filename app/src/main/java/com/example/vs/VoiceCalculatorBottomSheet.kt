@@ -9,7 +9,7 @@ import android.speech.tts.TextToSpeech
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
@@ -32,7 +32,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private lateinit var inputTextView: TextView
     private lateinit var resultTextView: TextView
     private lateinit var historyListView: ListView
-    private lateinit var startButton: Button
+    private lateinit var startButton: ImageButton
     private var lastResult: Double = 0.0
     private lateinit var database: DatabaseReference
     private lateinit var auth: FirebaseAuth
@@ -48,7 +48,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         inputTextView = view.findViewById(R.id.inputTextView)
         resultTextView = view.findViewById(R.id.resultTextView)
         historyListView = view.findViewById(R.id.historyListView)
-        startButton = view.findViewById(R.id.startButton)
+        startButton = view.findViewById(R.id.btn_speech) // Changed from startButton to btn_speech
 
         historyAdapter = VoiceCalculatorAdapter(requireContext(), historyList)
         historyListView.adapter = historyAdapter
@@ -73,7 +73,9 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 if (matches != null) {
                     val input = matches[0]
                     inputTextView.text = input
-                    handleInput(input)
+                    if (!handleNavigationCommands(input)) {
+                        handleInput(input)
+                    }
                 }
             }
 
@@ -108,7 +110,9 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         try {
             var expressionString = input.lowercase(Locale.getDefault())
             expressionString = expressionString.replace("plus", "+")
+                .replace("add", "+")
                 .replace("minus", "-")
+                .replace("subtract", "-")
                 .replace("times", "*")
                 .replace("multiplied by", "*")
                 .replace("multiply", "*")
@@ -186,8 +190,37 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         } catch (e: Exception) {
             resultTextView.text = "Invalid input format"
             speakOut("Invalid input format")
-           //
-        // Toast.makeText(requireContext(), "Error evaluating expression", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun handleNavigationCommands(input: String): Boolean {
+        return when {
+            input.contains("home page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), HomeActivity::class.java))
+                true
+            }
+            input.contains("speech to text", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), SpeechToTextActivity::class.java))
+                true
+            }
+            input.contains("voice calculator", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(parentFragmentManager, bottomSheet.tag)
+                true
+            }
+            input.contains("voice to do list", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), VoiceToDoListActivity::class.java))
+                true
+            }
+            input.contains("profile", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), ProfileActivity::class.java))
+                true
+            }
+            input.contains("downloads", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), DownloadActivity::class.java))
+                true
+            }
+            else -> false
         }
     }
 
@@ -201,6 +234,12 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         )
 
         historyRef.push().setValue(historyItem)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "History saved", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener {
+                Toast.makeText(requireContext(), "Failed to save history", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun fetchHistory() {
@@ -208,45 +247,36 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         val historyRef = database.child("users").child(userId).child("calculatorHistory")
 
         historyRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
                 historyList.clear()
-                for (childSnapshot in snapshot.children) {
-                    val input = childSnapshot.child("input").getValue(String::class.java) ?: ""
-                    val result = childSnapshot.child("result").getValue(String::class.java) ?: ""
+                for (snapshot in dataSnapshot.children) {
+                    val input = snapshot.child("input").getValue(String::class.java) ?: ""
+                    val result = snapshot.child("result").getValue(String::class.java) ?: ""
                     historyList.add("Input: $input | Result: $result")
                 }
                 historyAdapter.notifyDataSetChanged()
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(requireContext(), "Failed to fetch history", Toast.LENGTH_SHORT).show()
+            override fun onCancelled(databaseError: DatabaseError) {
+                Toast.makeText(requireContext(), "Failed to load history", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            textToSpeech.language = Locale.US
+        }
     }
 
     private fun speakOut(text: String) {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val result = textToSpeech.setLanguage(Locale.getDefault())
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Toast.makeText(requireContext(), "Language not supported", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Toast.makeText(requireContext(), "Initialization failed", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
-        if (::speechRecognizer.isInitialized) {
-            speechRecognizer.destroy()
-        }
-        if (::textToSpeech.isInitialized) {
-            textToSpeech.stop()
-            textToSpeech.shutdown()
-        }
+        speechRecognizer.destroy()
+        textToSpeech.stop()
+        textToSpeech.shutdown()
     }
 }

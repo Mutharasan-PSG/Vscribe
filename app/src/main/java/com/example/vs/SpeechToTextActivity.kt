@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -29,6 +30,7 @@ class SpeechToTextActivity : AppCompatActivity() {
     private lateinit var buttonRefresh: Button
     private lateinit var selectedLanguage: String
     private lateinit var database: DatabaseReference
+    private lateinit var btnSpeech: ImageButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +39,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         textViewTranscribed = findViewById(R.id.text_view_transcribed)
         buttonSaveText = findViewById(R.id.button_save_text)
         buttonRefresh = findViewById(R.id.button_refresh)
+        btnSpeech = findViewById(R.id.btn_speech)
 
         val spinnerLanguage: Spinner = findViewById(R.id.spinner_language)
         val languages = listOf("en_US", "ta_IN", "te_IN", "ml_IN", "hi_IN")
@@ -52,8 +55,7 @@ class SpeechToTextActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        val buttonStartSpeech: Button = findViewById(R.id.button_start_speech)
-        buttonStartSpeech.setOnClickListener { startSpeechRecognition() }
+        btnSpeech.setOnClickListener { startSpeechRecognition() }
 
         buttonRefresh.setOnClickListener {
             textViewTranscribed.text = ""
@@ -91,6 +93,7 @@ class SpeechToTextActivity : AppCompatActivity() {
                     } else {
                         textViewTranscribed.append(spokenText + " ")
                     }
+                    handleNavigationCommands(spokenText)
                 }
             }
 
@@ -105,6 +108,30 @@ class SpeechToTextActivity : AppCompatActivity() {
         }
 
         speechRecognizer.startListening(intent)
+    }
+
+    private fun handleNavigationCommands(spokenText: String) {
+        when {
+            spokenText.contains("Home page", ignoreCase = true) -> {
+                startActivity(Intent(this, HomeActivity::class.java))
+            }
+            spokenText.contains("Speech To Text", ignoreCase = true) -> {
+                startActivity(Intent(this, SpeechToTextActivity::class.java))
+            }
+            spokenText.contains("Voice Calculator", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+            }
+            spokenText.contains("Voice To Do List", ignoreCase = true) -> {
+                startActivity(Intent(this, VoiceToDoListActivity::class.java))
+            }
+            spokenText.contains("Profile", ignoreCase = true) -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+            }
+            spokenText.contains("Downloads", ignoreCase = true) -> {
+                startActivity(Intent(this, DownloadActivity::class.java))
+            }
+        }
     }
 
     private fun isFindReplaceCommand(spokenText: String): Boolean {
@@ -169,5 +196,4 @@ class SpeechToTextActivity : AppCompatActivity() {
             }
         }
     }
-
 }

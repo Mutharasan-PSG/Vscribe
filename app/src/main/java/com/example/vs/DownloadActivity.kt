@@ -4,11 +4,15 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.SearchView
 import android.widget.Spinner
@@ -37,6 +41,7 @@ class DownloadActivity : AppCompatActivity() {
     private var fileList: MutableList<Map<String, String>> = mutableListOf()
     private var adapter: ArrayAdapter<String>? = null
     private var fileContentToSave: String = ""
+    private lateinit var speechRecognizer: SpeechRecognizer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,8 +59,83 @@ class DownloadActivity : AppCompatActivity() {
         setupSearchView()
         setupRefreshButton()
         setupFilterSpinner()
+        setupSpeechRecognizer()
 
         loadFilesFromFirebase()
+    }
+
+    private fun setupSpeechRecognizer() {
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                Log.d("SpeechRecognizer", "Ready for speech")
+            }
+
+            override fun onBeginningOfSpeech() {
+                Log.d("SpeechRecognizer", "Beginning of speech")
+            }
+
+            override fun onRmsChanged(rmsdB: Float) {}
+
+            override fun onBufferReceived(buffer: ByteArray?) {}
+
+            override fun onEndOfSpeech() {
+                Log.d("SpeechRecognizer", "End of speech")
+            }
+
+            override fun onError(error: Int) {
+                Log.e("SpeechRecognizer", "Error: $error")
+            }
+
+            override fun onResults(results: Bundle?) {
+                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { resultList ->
+                    val recognizedText = resultList[0]
+                    handleSpeechResult(recognizedText)
+                }
+            }
+
+            override fun onPartialResults(partialResults: Bundle?) {}
+
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+
+        // Optional: Add a button to start speech recognition
+        val btnSpeech = findViewById<ImageButton>(R.id.btn_speech)
+        btnSpeech.setOnClickListener {
+            startSpeechRecognition()
+        }
+    }
+
+    private fun startSpeechRecognition() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+        }
+        speechRecognizer.startListening(intent)
+    }
+
+    private fun handleSpeechResult(recognizedText: String) {
+        when {
+            recognizedText.contains("Home page", ignoreCase = true) -> {
+                startActivity(Intent(this, HomeActivity::class.java))
+            }
+
+            recognizedText.contains("Speech To Text", ignoreCase = true) -> {
+                startActivity(Intent(this, SpeechToTextActivity::class.java))
+            }
+            recognizedText.contains("Voice Calculator", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+            }
+            recognizedText.contains("Voice To Do List", ignoreCase = true) -> {
+                startActivity(Intent(this, VoiceToDoListActivity::class.java))
+            }
+            recognizedText.contains("Profile", ignoreCase = true) -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+            }
+
+        }
     }
 
     private fun loadFilesFromFirebase() {

@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/sign_in_button_background_color" />
+    <corners android:radius="6dp" /> <!-- Adjust the radius as needed -->
+</shape>

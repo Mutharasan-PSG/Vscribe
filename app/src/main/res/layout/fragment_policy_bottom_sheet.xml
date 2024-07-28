@@ -6,12 +6,34 @@
     android:padding="16dp">
 
     <TextView
+        android:id="@+id/Profile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PRIVACY POLICY"
+
+        android:textSize="22sp"
+        android:textColor="@color/BLUE"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="3dp"
+        android:layout_marginLeft="1dp"
+        android:layout_alignParentStart="true"
+
+        />
+
+    <TextView
         android:id="@+id/tv_policy"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="According to the policy of the app, Google will share your user details with the app."
+
+        android:text="Dear User,\n
+
+According to the policy of the Vscribe app, Google will share the details associated with your Google account with us. We will store and process your data, including voice-converted text, in our database for your usability and to improve our services, ensuring a better experience for you.\n\n
+
+If you agree, please confirm and continue to explore the app."
         android:textSize="16sp"
-        android:paddingBottom="16dp"/>
+        android:paddingBottom="16dp"
+        android:lineSpacingExtra="2dp"
+        android:justificationMode="inter_word"/>
 
     <LinearLayout
         android:layout_width="match_parent"

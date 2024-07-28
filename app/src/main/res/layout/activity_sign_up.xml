@@ -2,36 +2,94 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SignUpActivity">
+    tools:context=".SignUpActivity"
+   >
 
-    <com.google.android.gms.common.SignInButton
-        android:id="@+id/btn_google_sign_in"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sign Up with Google" />
+    <!-- App Icon -->
+    <ImageView
+        android:id="@+id/AppIcon"
+        android:layout_width="170dp"
+        android:layout_height="150dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="230dp"
+        android:src="@drawable/splash_logo"
+        android:contentDescription="@string/AppLogo" />
 
+    <!-- Google Sign-In Button -->
     <LinearLayout
+        android:id="@+id/btn_google_sign_in"
+        android:layout_width="240dp"
+        android:layout_height="42dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="1dp"
+        android:background="@drawable/rounded_corners"
+        android:clickable="true"
+        android:focusable="true"
+        android:layout_below="@id/AppIcon"
+        android:padding="7dp">
+
+        <ImageView
+            android:id="@+id/google_logo"
+            android:layout_width="26dp"
+            android:layout_height="35dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/google_logo"
+            android:scaleType="fitCenter"
+            android:layout_marginEnd="20dp" />
+
+        <TextView
+            android:id="@+id/google_sign_in_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sign_up_with_google"
+            android:textColor="@color/sign_in_button_text_color"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <!-- Text for Existing Users -->
+    <LinearLayout
+        android:id="@+id/existing_user_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_below="@+id/btn_google_sign_in"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal">
+        android:layout_marginTop="12dp">
 
-        <TextView
-            android:id="@+id/tvAlreadyHaveAccount"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Already have an account? "
-            android:textSize="16sp" />
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvAlreadyHaveAccount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="22dp"
+                android:text="Already have an account? "
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/tvLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Login"
+                android:textColor="@color/BLUE"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/tvLogin"
-            android:layout_width="wrap_content"
+            android:id="@+id/privacy"
+            android:layout_width="270dp"
             android:layout_height="wrap_content"
-            android:text="Login"
-            android:textColor="@android:color/holo_blue_light"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="By signing up you accept our Terms of Use and Privacy Policy"
+            android:textColor="@color/black"
+            android:textSize="14sp" />
     </LinearLayout>
 </RelativeLayout>

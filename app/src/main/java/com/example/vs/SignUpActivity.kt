@@ -6,11 +6,14 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -63,10 +66,12 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
             }
         }
 
+        // Customize Google Sign-In button
+        val signInButton = findViewById<LinearLayout>(R.id.btn_google_sign_in)
+        customizeGoogleSignInButton(signInButton)
+
         // Google Sign-In button click handler
-        findViewById<com.google.android.gms.common.SignInButton>(R.id.btn_google_sign_in).setOnClickListener {
-            signInWithGoogle()
-        }
+        signInButton.setOnClickListener { signInWithGoogle() }
 
         // Login TextView click handler to redirect to login page
         findViewById<TextView>(R.id.tvLogin).setOnClickListener {
@@ -174,5 +179,18 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
         Handler(Looper.getMainLooper()).postDelayed({
             toast.cancel()
         }, duration.toLong())
+    }
+
+    private fun customizeGoogleSignInButton(signInButton: LinearLayout) {
+        val googleLogo = signInButton.findViewById<ImageView>(R.id.google_logo)
+        val googleSignInText = signInButton.findViewById<TextView>(R.id.google_sign_in_text)
+
+        // Set text color and background color from colors.xml
+        googleSignInText.setTextColor(ContextCompat.getColor(this, R.color.sign_in_button_text_color))
+        signInButton.setBackgroundColor(ContextCompat.getColor(this, R.color.sign_in_button_background_color))
+
+
+        signInButton.background = ContextCompat.getDrawable(this, R.drawable.rounded_corners)
+        // Optionally, you can set other customizations like text size, padding, etc.
     }
 }

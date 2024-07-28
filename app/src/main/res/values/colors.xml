@@ -2,10 +2,14 @@
 <resources>
     <!-- res/values/colors.xml -->
 
+        <color name="sign_in_button_text_color">#FFFFFF</color> <!-- Example white color -->
+        <color name="sign_in_button_background_color">#2B8CFF</color> <!-- Example blue color -->
+
         <color name="textPrimary">#000000</color> <!-- Black color -->
        White color -->
 
-        <color name="history_item_color">#808080</color> <!-- Grey color -->
+        <color name="history_item_color">#808080</color>
+    <color name="backgroundr">#FAF9F9</color><!-- Grey color -->
 
     <color name="textSecondary">#757575</color> <!-- or any color you want -->
     <color name="buttonText">#2B8CFF</color> <!-- or any color you want -->

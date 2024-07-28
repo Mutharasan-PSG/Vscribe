@@ -54,6 +54,7 @@ class PolicyBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
+
     override fun onDetach() {
         super.onDetach()
         listener = null

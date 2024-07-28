@@ -155,7 +155,7 @@ class ProfileActivity : AppCompatActivity() {
             sessionManager.clearSession()
 
             // Redirect to LoginActivity
-            val intent = Intent(this, LoginActivity::class.java)
+            val intent = Intent(this, SignUpActivity::class.java)
             startActivity(intent)
             finish()
         }

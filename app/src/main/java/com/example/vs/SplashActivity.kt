@@ -22,7 +22,7 @@ class SplashActivity : AppCompatActivity() {
                 startActivity(Intent(this, HomeActivity::class.java))
             } else {
                 // No user is signed in or session expired, redirect to LoginActivity
-                startActivity(Intent(this, LoginActivity::class.java))
+                startActivity(Intent(this, SignUpActivity::class.java))
             }
             finish() // Finish SplashActivity so the user can't navigate back to it
         }, 1000) // Display the splash screen for 2 seconds

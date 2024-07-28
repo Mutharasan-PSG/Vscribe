@@ -25,16 +25,17 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 
-class LoginActivity : AppCompatActivity() {
+class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyListener {
 
     private lateinit var sessionManager: SessionManager
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var signInResultLauncher: ActivityResultLauncher<Intent>
     private lateinit var database: DatabaseReference
+    private var pendingAccount: GoogleSignInAccount? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        setContentView(R.layout.activity_sign_up)
 
         sessionManager = SessionManager(this)
 
@@ -54,10 +55,10 @@ class LoginActivity : AppCompatActivity() {
             if (result.resultCode == RESULT_OK) {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 try {
-                    val account = task.getResult(ApiException::class.java)
-                    handleSignInResult(account)
+                    pendingAccount = task.getResult(ApiException::class.java)
+                    showPolicyBottomSheet()
                 } catch (e: ApiException) {
-                    Log.e("LoginActivity", "Google sign-in failed: ${e.message}")
+                    Log.e("SignUpActivity", "Google sign-in failed: ${e.message}")
                 }
             }
         }
@@ -67,9 +68,9 @@ class LoginActivity : AppCompatActivity() {
             signInWithGoogle()
         }
 
-        // SignUp text view click handler
-        findViewById<TextView>(R.id.tv_signup_clickable).setOnClickListener {
-            startActivity(Intent(this, SignUpActivity::class.java))
+        // Login TextView click handler to redirect to login page
+        findViewById<TextView>(R.id.tvLogin).setOnClickListener {
+            startActivity(Intent(this, LoginActivity::class.java))
         }
     }
 
@@ -78,23 +79,34 @@ class LoginActivity : AppCompatActivity() {
         signInResultLauncher.launch(signInIntent)
     }
 
-    private fun handleSignInResult(account: GoogleSignInAccount?) {
-        if (account != null) {
-            showCustomToast("Please wait...", 2000) // Show custom toast for 2 seconds
+    private fun showPolicyBottomSheet() {
+        val bottomSheet = PolicyBottomSheetFragment()
+        bottomSheet.show(supportFragmentManager, "PolicyBottomSheet")
+    }
 
+    override fun onConfirm() {
+        pendingAccount?.let { account ->
             val credential = GoogleAuthProvider.getCredential(account.idToken, null)
             FirebaseAuth.getInstance().signInWithCredential(credential).addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
                     // Sign-in successful
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null) {
+                        // Check if user already exists in the database
                         checkIfUserExists(user.uid, user)
                     }
                 } else {
-                    Log.e("LoginActivity", "Firebase sign-in failed", task.exception)
+                    Log.e("SignUpActivity", "Firebase sign-in failed", task.exception)
                     // Handle sign-in failure
                 }
             }
+        }
+    }
+
+    override fun onCancel() {
+        // Reset the Google sign-in flow
+        googleSignInClient.signOut().addOnCompleteListener {
+            pendingAccount = null
         }
     }
 
@@ -103,6 +115,21 @@ class LoginActivity : AppCompatActivity() {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     // User already exists
+                    showCustomToast("Already you have an account", 1400)
+                    // Redirect to HomeActivity
+                    sessionManager.setLoggedIn(true) // Update login status
+                    sessionManager.saveUserDetails(
+                        User(
+                            id = user.uid,
+                            name = user.displayName.toString(),
+                            email = user.email.toString(),
+                            photoUrl = user.photoUrl?.toString()
+                        )
+                    )
+                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                    finish()
+                } else {
+                    // User does not exist, proceed with registration
                     val userDetails = User(
                         id = user.uid, // Assuming UID as ID
                         name = user.displayName.toString(),
@@ -112,23 +139,31 @@ class LoginActivity : AppCompatActivity() {
                     sessionManager.setLoggedIn(true) // Update login status
                     sessionManager.saveUserDetails(userDetails)
 
+                    // Store user details in Firebase Realtime Database
+                    storeUserInDatabase(user.uid, userDetails)
+
                     // Redirect to HomeActivity
-                    startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
-                    finish()
-                } else {
-                    // User does not exist, redirect to SignUpActivity
-                    showCustomToast("Please Register your account", 1800)
-                    FirebaseAuth.getInstance().signOut()
-                    startActivity(Intent(this@LoginActivity, SignUpActivity::class.java))
+                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                    showCustomToast("Welcome! Your account has been created.", 2000)
                     finish()
                 }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e("LoginActivity", "Database error: ${error.message}")
+                Log.e("SignUpActivity", "Database error: ${error.message}")
                 // Handle database error
             }
         })
+    }
+
+    private fun storeUserInDatabase(userId: String, userDetails: User) {
+        database.child("users").child(userId).setValue(userDetails)
+            .addOnSuccessListener {
+                Log.d("SignUpActivity", "User data saved successfully.")
+            }
+            .addOnFailureListener { e ->
+                Log.e("SignUpActivity", "Failed to save user data: ${e.message}")
+            }
     }
 
     private fun showCustomToast(message: String, duration: Int) {

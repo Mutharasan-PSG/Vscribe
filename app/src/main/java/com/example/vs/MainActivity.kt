@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // Otherwise, show the login screen
             sessionManager.clearSession() // Clear session if it is not valid
-            startActivity(Intent(this, LoginActivity::class.java))
+            startActivity(Intent(this, SignUpActivity::class.java))
         }
         finish()
     }

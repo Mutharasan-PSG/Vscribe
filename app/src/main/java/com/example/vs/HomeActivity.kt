@@ -36,7 +36,7 @@ class HomeActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {

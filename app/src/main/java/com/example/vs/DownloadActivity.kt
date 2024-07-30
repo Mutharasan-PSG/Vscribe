@@ -31,7 +31,6 @@ import java.util.Date
 import java.util.Locale
 
 class DownloadActivity : AppCompatActivity() {
-
     private lateinit var listViewFiles: ListView
     private lateinit var searchView: SearchView
     private lateinit var buttonRefresh: ImageButton
@@ -70,12 +69,12 @@ class DownloadActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -165,9 +164,8 @@ class DownloadActivity : AppCompatActivity() {
         })
     }
 
-
     private fun setupListView() {
-        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, fileList.map { it["fileName"] ?: "Unknown" })
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, fileList.map { stripExtension(it["fileName"] ?: "Unknown") })
         listViewFiles.adapter = adapter
 
         listViewFiles.setOnItemClickListener { _, _, position, _ ->
@@ -178,6 +176,7 @@ class DownloadActivity : AppCompatActivity() {
             showFileTypeSelectionDialog(fileName)
         }
     }
+
 
     private fun showFileTypeSelectionDialog(fileName: String) {
         val fileTypes = arrayOf("TXT", "PDF", "DOCX")
@@ -267,8 +266,17 @@ class DownloadActivity : AppCompatActivity() {
 
     private fun updateListView() {
         adapter?.clear()
-        adapter?.addAll(fileList.map { it["fileName"] ?: "Unknown" })
+        adapter?.addAll(fileList.map { stripExtension(it["fileName"] ?: "Unknown" )})
         adapter?.notifyDataSetChanged()
+    }
+
+    private fun stripExtension(fileName: String): String {
+        val lastIndexOfDot = fileName.lastIndexOf('.')
+        return if (lastIndexOfDot != -1) {
+            fileName.substring(0, lastIndexOfDot)
+        } else {
+            fileName
+        }
     }
 
     private fun setupSearchView() {
@@ -293,7 +301,7 @@ class DownloadActivity : AppCompatActivity() {
     }
 
     private fun setupFilterSpinner() {
-        val filters = listOf("Filter", "Date", "Month", "Year", "File Type", "Ascending", "Descending", "Numbers First")
+        val filters = listOf("Filter", "Date", "Month", "Year", "Ascending", "Descending", "Numeric")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filters)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFilter.adapter = adapter
@@ -322,10 +330,9 @@ class DownloadActivity : AppCompatActivity() {
             "Date" -> fileList.sortedBy { it["fileDate"] }
             "Month" -> fileList.sortedBy { it["fileMonth"] }
             "Year" -> fileList.sortedBy { it["fileYear"] }
-            "File Type" -> fileList.sortedBy { it["fileType"] }
             "Ascending" -> fileList.sortedBy { it["fileName"] }
             "Descending" -> fileList.sortedByDescending { it["fileName"] }
-            "Numbers First" -> fileList.sortedBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE }
+            "Numeric" -> fileList.sortedBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE }
             else -> fileList
         }
         adapter?.clear()
@@ -337,3 +344,5 @@ class DownloadActivity : AppCompatActivity() {
         const val CREATE_FILE_REQUEST_CODE = 1
     }
 }
+
+

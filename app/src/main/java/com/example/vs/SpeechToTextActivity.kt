@@ -80,10 +80,10 @@ class SpeechToTextActivity : AppCompatActivity() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
             override fun onBeginningOfSpeech() {
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}

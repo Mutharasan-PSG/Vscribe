@@ -60,10 +60,10 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
 
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                startButton.setImageResource(R.drawable.voice_frequency)
+                startButton.setImageResource(R.drawable.voice_frequencyy)
             }
             override fun onBeginningOfSpeech() {
-                startButton.setImageResource(R.drawable.voice_frequency)
+                startButton.setImageResource(R.drawable.voice_frequencyy)
             }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
@@ -163,6 +163,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("absolute value", "abs")
                 .replace("factorial", "factorial")
                 .replace("result", lastResult.toString())
+                .replace("answer", lastResult.toString())
 
             expressionString = expressionString.replace("what is|calculate|compute|find|the|and".toRegex(), "").trim()
 

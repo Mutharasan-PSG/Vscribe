@@ -19,8 +19,7 @@
         <item>File Type</item>
         <item>Ascending</item>
         <item>Descending</item>
-        <item>File Type</item>
-        <item>Numbers First</item>
+        <item>Numeric</item>
     </string-array>
 
     <string-array name="file_type_options">
@@ -32,5 +31,6 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="AppLogo" />
     <string name="sign_up_with_google">Sign up with Google</string>
+    <string name="version_2_0">Version 2.0</string>
 
 </resources>

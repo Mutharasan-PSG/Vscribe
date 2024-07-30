@@ -7,7 +7,7 @@
 
         <color name="textPrimary">#000000</color> <!-- Black color -->
        White color -->
-
+            <color name="grey">#F5F5F5</color>
         <color name="history_item_color">#808080</color>
     <color name="backgroundr">#FAF9F9</color><!-- Grey color -->
 

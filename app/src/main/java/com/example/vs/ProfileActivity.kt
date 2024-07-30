@@ -6,9 +6,9 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
@@ -24,7 +24,6 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var btnSpeech: ImageButton
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +46,7 @@ class ProfileActivity : AppCompatActivity() {
             val nameTextView: TextView = findViewById(R.id.profile_name)
             val emailTextView: TextView = findViewById(R.id.profile_email)
             val profileImageView: ImageView = findViewById(R.id.profile_image)
-            val signOutButton: Button = findViewById(R.id.btn_sign_out)
+            val signOutButton: LinearLayout = findViewById(R.id.btn_sign_out)
             btnSpeech = findViewById(R.id.btn_speech)
 
             nameTextView.text = user.name
@@ -70,12 +69,12 @@ class ProfileActivity : AppCompatActivity() {
             speechRecognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     Log.d("SpeechRecognizer", "Ready for speech")
-                    btnSpeech.setImageResource(R.drawable.voice_frequency)
+                    btnSpeech.setImageResource(R.drawable.voice_frequencyy)
                 }
 
                 override fun onBeginningOfSpeech() {
                     Log.d("SpeechRecognizer", "Beginning of speech")
-                    btnSpeech.setImageResource(R.drawable.voice_frequency)
+                    btnSpeech.setImageResource(R.drawable.voice_frequencyy)
                 }
 
                 override fun onRmsChanged(rmsdB: Float) {}

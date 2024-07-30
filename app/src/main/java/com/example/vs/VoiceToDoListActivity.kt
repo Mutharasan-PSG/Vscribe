@@ -147,3 +147,4 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer.destroy()
     }
 }
+

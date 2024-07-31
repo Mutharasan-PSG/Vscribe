@@ -19,7 +19,6 @@
         <item>File Type</item>
         <item>Ascending</item>
         <item>Descending</item>
-        <item>Numeric</item>
     </string-array>
 
     <string-array name="file_type_options">

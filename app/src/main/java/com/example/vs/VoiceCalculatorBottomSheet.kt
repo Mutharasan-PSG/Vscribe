@@ -38,6 +38,8 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private lateinit var auth: FirebaseAuth
     private val historyList = mutableListOf<String>()
     private lateinit var historyAdapter: VoiceCalculatorAdapter
+    private lateinit var historyEmptyTextView: TextView
+    private lateinit var history: TextView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,51 +47,19 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     ): View? {
         val view = inflater.inflate(R.layout.fragment_voice_calculator, container, false)
 
+        history=view.findViewById(R.id.history)
         inputTextView = view.findViewById(R.id.inputTextView)
         resultTextView = view.findViewById(R.id.resultTextView)
         historyListView = view.findViewById(R.id.historyListView)
-        startButton = view.findViewById(R.id.btn_speech) // Changed from startButton to btn_speech
-
+        startButton = view.findViewById(R.id.btn_speech)
+        historyEmptyTextView = view.findViewById(R.id.historyEmptyTextView)
         historyAdapter = VoiceCalculatorAdapter(requireContext(), historyList)
         historyListView.adapter = historyAdapter
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+        initializeSpeechRecognizer()
         textToSpeech = TextToSpeech(requireContext(), this)
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance().reference
-
-        speechRecognizer.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) {
-                startButton.setImageResource(R.drawable.voice_frequencyy)
-            }
-            override fun onBeginningOfSpeech() {
-                startButton.setImageResource(R.drawable.voice_frequencyy)
-            }
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {
-                startButton.setImageResource(R.drawable.mic)
-            }
-            override fun onError(error: Int) {
-                Toast.makeText(requireContext(), "Error recognizing speech", Toast.LENGTH_SHORT).show()
-                startButton.setImageResource(R.drawable.mic)
-            }
-
-            override fun onResults(results: Bundle?) {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (matches != null) {
-                    val input = matches[0]
-                    inputTextView.text = input
-                    if (!handleNavigationCommands(input)) {
-                        handleInput(input)
-                    }
-                }
-                startButton.setImageResource(R.drawable.mic)
-            }
-
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
 
         startButton.setOnClickListener {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -101,6 +71,48 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         fetchHistory()
 
         return view
+    }
+
+    private fun initializeSpeechRecognizer() {
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                startButton.setImageResource(R.drawable.voice_frequency)
+            }
+
+            override fun onBeginningOfSpeech() {
+                startButton.setImageResource(R.drawable.voice_frequency)
+            }
+
+            override fun onRmsChanged(rmsdB: Float) {}
+
+            override fun onBufferReceived(buffer: ByteArray?) {}
+
+            override fun onEndOfSpeech() {
+                startButton.setImageResource(R.drawable.mic)
+            }
+
+            override fun onError(error: Int) {
+                Toast.makeText(requireContext(), "Error recognizing speech", Toast.LENGTH_SHORT).show()
+                startButton.setImageResource(R.drawable.mic)
+            }
+
+            override fun onResults(results: Bundle?) {
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (matches != null && matches.isNotEmpty()) {
+                    val input = matches[0]
+                    inputTextView.text = input
+                    if (!handleNavigationCommands(input)) {
+                        handleInput(input)
+                    }
+                }
+                startButton.setImageResource(R.drawable.mic)
+            }
+
+            override fun onPartialResults(partialResults: Bundle?) {}
+
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
     }
 
     override fun onStart() {
@@ -117,7 +129,8 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private fun handleInput(input: String) {
         try {
             var expressionString = input.lowercase(Locale.getDefault())
-            expressionString = expressionString.replace("plus", "+")
+            expressionString = expressionString
+                .replace("plus", "+")
                 .replace("add", "+")
                 .replace("minus", "-")
                 .replace("subtract", "-")
@@ -127,10 +140,11 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("divided by", "/")
                 .replace("by", "/")
                 .replace("into", "*")
+                .replace("power", "^")
                 .replace("raised to the power of", "^")
                 .replace("square", "^2")
                 .replace("cube", "^3")
-                .replace("sqrt", "sqrt")
+                .replace("square root", "sqrt")
                 .replace("root", "sqrt")
                 .replace("sine", "sin")
                 .replace("cosine", "cos")
@@ -160,7 +174,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("logarithm", "log")
                 .replace("natural logarithm", "ln")
                 .replace("log base 2", "log2")
-                .replace("absolute value", "abs")
+                //   .replace("absolute value", "abs")
                 .replace("factorial", "factorial")
                 .replace("result", lastResult.toString())
                 .replace("answer", lastResult.toString())
@@ -213,79 +227,91 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 true
             }
             input.contains("voice calculator", ignoreCase = true) -> {
-                val bottomSheet = VoiceCalculatorBottomSheet()
-                bottomSheet.show(parentFragmentManager, bottomSheet.tag)
+                // Prevent multiple instances of the same bottom sheet
+                if (parentFragmentManager.findFragmentByTag("VoiceCalculatorBottomSheet") == null) {
+                    val bottomSheet = VoiceCalculatorBottomSheet()
+                    bottomSheet.show(parentFragmentManager, bottomSheet.tag)
+                }
                 true
             }
             input.contains("voice to do list", ignoreCase = true) -> {
                 startActivity(Intent(requireContext(), VoiceToDoListActivity::class.java))
                 true
             }
-            input.contains("profile", ignoreCase = true) -> {
-                startActivity(Intent(requireContext(), ProfileActivity::class.java))
+            input.contains("Downloads", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), DownloadActivity::class.java))
                 true
             }
-            input.contains("downloads", ignoreCase = true) -> {
-                startActivity(Intent(requireContext(), DownloadActivity::class.java))
+            input.contains("Profile", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), ProfileActivity::class.java))
                 true
             }
             else -> false
         }
     }
 
-    private fun saveHistory(input: String, result: String) {
-        val userId = auth.currentUser?.uid ?: return
-        val historyRef = database.child("users").child(userId).child("calculatorHistory")
-
-        val historyItem = mapOf(
-            "input" to input,
-            "result" to result
-        )
-
-        historyRef.push().setValue(historyItem)
-            .addOnSuccessListener {
-                Toast.makeText(requireContext(), "History saved", Toast.LENGTH_SHORT).show()
-            }
-            .addOnFailureListener {
-                Toast.makeText(requireContext(), "Failed to save history", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun fetchHistory() {
-        val userId = auth.currentUser?.uid ?: return
-        val historyRef = database.child("users").child(userId).child("calculatorHistory")
-
-        historyRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                historyList.clear()
-                for (snapshot in dataSnapshot.children) {
-                    val input = snapshot.child("input").getValue(String::class.java) ?: ""
-                    val result = snapshot.child("result").getValue(String::class.java) ?: ""
-                    historyList.add("Input: $input | Result: $result")
-                }
-                historyAdapter.notifyDataSetChanged()
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                Toast.makeText(requireContext(), "Failed to load history", Toast.LENGTH_SHORT).show()
-            }
-        })
+    private fun speakOut(text: String) {
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "")
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            textToSpeech.language = Locale.US
+            val result = textToSpeech.setLanguage(Locale.getDefault())
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Toast.makeText(requireContext(), "Language not supported", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(requireContext(), "Initialization failed", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun speakOut(text: String) {
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+    private fun saveHistory(input: String, result: String) {
+        val currentUser = auth.currentUser
+        currentUser?.let {
+            val userHistoryRef = database.child("users").child(it.uid).child("history")
+            val historyItem = mapOf("input" to input, "result" to result)
+            userHistoryRef.push().setValue(historyItem)
+        }
+    }
+
+    private fun fetchHistory() {
+        val currentUser = auth.currentUser
+        currentUser?.let {
+            val userHistoryRef = database.child("users").child(it.uid).child("history")
+            userHistoryRef.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    historyList.clear()
+                    if (snapshot.exists()) {
+                        for (historySnapshot in snapshot.children) {
+                            val input = historySnapshot.child("input").getValue(String::class.java)
+                            val result = historySnapshot.child("result").getValue(String::class.java)
+                            if (input != null && result != null) {
+                                historyList.add("Input: $input | Result: $result")
+                            }
+                        }
+                    }
+                    historyAdapter.notifyDataSetChanged()
+                    if (historyList.isEmpty()) {
+                        historyEmptyTextView.visibility = View.VISIBLE
+                        history.visibility = View.GONE
+                        historyListView.visibility = View.GONE
+                    } else {
+                        historyEmptyTextView.visibility = View.GONE
+                        history.visibility = View.VISIBLE
+                        historyListView.visibility = View.VISIBLE
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Toast.makeText(requireContext(), "Failed to load history", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         speechRecognizer.destroy()
-        textToSpeech.stop()
         textToSpeech.shutdown()
     }
 }

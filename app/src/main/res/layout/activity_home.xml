@@ -11,10 +11,8 @@
         android:textSize="30sp"
         android:textColor="@color/BLUE"
         android:layout_marginTop="5dp"
-        android:layout_margin="11dp"
-        android:layout_alignParentStart="true"
-        android:layout_marginStart="5dp"
-        />
+        android:layout_marginStart="11dp"
+        android:layout_alignParentStart="true"/>
 
     <LinearLayout
         android:id="@+id/item_speech_to_text"
@@ -95,6 +93,38 @@
         android:layout_alignParentBottom="true"
         app:menu="@menu/bottom_nav_menu" />
 
+    <ViewFlipper
+        android:id="@+id/viewflipper"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/item_voice_to_do_list"
+        android:layout_above="@id/bottom_nav"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="10dp"
+        android:flipInterval="1400">
+
+        <ImageView
+            android:id="@+id/AD"
+            android:scaleType="fitCenter"
+            android:layout_width="350dp"
+            android:layout_height="220dp"
+            android:src="@drawable/homepage_ad"/>
+
+        <ImageView
+            android:id="@+id/vc"
+            android:scaleType="fitCenter"
+            android:layout_width="350dp"
+            android:layout_height="220dp"
+            android:src="@drawable/homepage_vc"/>
+
+        <ImageView
+            android:id="@+id/vt"
+            android:scaleType="fitCenter"
+            android:layout_width="350dp"
+            android:layout_height="220dp"
+            android:src="@drawable/homepage_vt"/>
+    </ViewFlipper>
+
     <ImageButton
         android:id="@+id/btn_speech"
         android:layout_width="62dp"
@@ -106,5 +136,5 @@
         android:background="@null"
         android:contentDescription="Speech Button"
         android:scaleType="fitCenter"
-        android:src="@drawable/mic" />
+        android:src="@drawable/mic"/>
 </RelativeLayout>

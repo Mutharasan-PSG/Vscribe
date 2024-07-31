@@ -13,7 +13,7 @@
         android:textSize="27sp"
         android:textColor="@color/BLUE"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="9dp"/>
 
     <ImageView
         android:id="@+id/profile_image"

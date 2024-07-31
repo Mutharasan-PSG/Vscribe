@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:padding="16dp">
-
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
 
     <TextView
         android:id="@+id/VC"
@@ -14,34 +13,33 @@ android:padding="16dp">
         android:textColor="@color/BLUE"
         android:layout_marginLeft="2dp"
         android:layout_alignParentStart="true"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Input TextView -->
+    <TextView
+        android:id="@+id/inputTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        />
-<!-- Input TextView -->
-<TextView
-    android:id="@+id/inputTextView"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    android:background="#F0F0F0"
-    android:padding="8dp"
-    android:textColor="#000"
-    android:textSize="18sp"
-    android:text="Input"
-    android:layout_below="@+id/VC"/>
+        android:background="#F0F0F0"
+        android:padding="8dp"
+        android:textColor="#000"
+        android:textSize="18sp"
+        android:text="Input"
+        android:layout_below="@+id/VC" />
 
-<!-- Result TextView -->
-<TextView
-    android:id="@+id/resultTextView"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_below="@id/inputTextView"
-    android:layout_marginBottom="16dp"
-    android:background="#F0F0F0"
-    android:padding="8dp"
-    android:textColor="#000"
-    android:textSize="18sp"
-    android:text="Result" />
-
+    <!-- Result TextView -->
+    <TextView
+        android:id="@+id/resultTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/inputTextView"
+        android:layout_marginBottom="16dp"
+        android:background="#F0F0F0"
+        android:padding="8dp"
+        android:textColor="#000"
+        android:textSize="18sp"
+        android:text="Result" />
 
     <TextView
         android:id="@+id/history"
@@ -50,18 +48,32 @@ android:padding="16dp">
         android:layout_height="wrap_content"
         android:textSize="15sp"
         android:hint="History"
-        />
+        android:visibility="gone"/>
 
-<!-- History ListView -->
-<ListView
-    android:id="@+id/historyListView"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_below="@id/history"
-    android:layout_alignParentBottom="true"
-    android:divider="@android:color/darker_gray"
-    android:dividerHeight="1dp"
-    android:padding="8dp" />
+    <!-- History Empty TextView -->
+    <TextView
+        android:id="@+id/historyEmptyTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="History will appear here"
+        android:textSize="18sp"
+        android:textColor="@color/history_item_color"
+        android:padding="8dp"
+        android:gravity="center"
+        android:layout_marginTop="150dp"
+        android:visibility="gone"
+        android:layout_below="@id/history" />
+
+    <!-- History ListView -->
+    <ListView
+        android:id="@+id/historyListView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/historyEmptyTextView"
+        android:layout_alignParentBottom="true"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="1dp"
+        android:padding="8dp" />
 
     <ImageButton
         android:id="@+id/btn_speech"

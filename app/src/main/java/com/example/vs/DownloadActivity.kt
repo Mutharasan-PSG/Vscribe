@@ -15,6 +15,7 @@ import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.SearchView
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.database.DataSnapshot
@@ -41,6 +42,7 @@ class DownloadActivity : AppCompatActivity() {
     private var fileContentToSave: String = ""
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var btnSpeech: ImageButton
+    private lateinit var textNoFiles: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +53,7 @@ class DownloadActivity : AppCompatActivity() {
         buttonRefresh = findViewById(R.id.button_refresh)
         spinnerFilter = findViewById(R.id.spinner_filter)
         btnSpeech = findViewById(R.id.btn_speech)
-
+        textNoFiles = findViewById(R.id.text_no_files)
         // Initialize Firebase
         database = FirebaseDatabase.getInstance().reference.child("Files")
 
@@ -60,7 +62,7 @@ class DownloadActivity : AppCompatActivity() {
         setupRefreshButton()
         setupFilterSpinner()
         setupSpeechRecognizer()
-
+    
         loadFilesFromFirebase()
     }
 
@@ -69,12 +71,12 @@ class DownloadActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -104,8 +106,6 @@ class DownloadActivity : AppCompatActivity() {
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
-        // Optional: Add a button to start speech recognition
-        val btnSpeech = findViewById<ImageButton>(R.id.btn_speech)
         btnSpeech.setOnClickListener {
             startSpeechRecognition()
         }
@@ -129,17 +129,19 @@ class DownloadActivity : AppCompatActivity() {
             recognizedText.contains("Speech To Text", ignoreCase = true) -> {
                 startActivity(Intent(this, SpeechToTextActivity::class.java))
             }
+
             recognizedText.contains("Voice Calculator", ignoreCase = true) -> {
                 val bottomSheet = VoiceCalculatorBottomSheet()
                 bottomSheet.show(supportFragmentManager, bottomSheet.tag)
             }
+
             recognizedText.contains("Voice To Do List", ignoreCase = true) -> {
                 startActivity(Intent(this, VoiceToDoListActivity::class.java))
             }
+
             recognizedText.contains("Profile", ignoreCase = true) -> {
                 startActivity(Intent(this, ProfileActivity::class.java))
             }
-
         }
     }
 
@@ -177,12 +179,11 @@ class DownloadActivity : AppCompatActivity() {
         }
     }
 
-
     private fun showFileTypeSelectionDialog(fileName: String) {
         val fileTypes = arrayOf("TXT", "PDF", "DOCX")
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Select File Type")
-        builder.setItems(fileTypes) { dialog, which ->
+        builder.setItems(fileTypes) { _, which ->
             val selectedFileType = fileTypes[which]
             val newFileName = when (selectedFileType) {
                 "PDF" -> fileName.replaceAfterLast('.', "pdf")
@@ -251,11 +252,10 @@ class DownloadActivity : AppCompatActivity() {
     private fun saveDocxToFile(uri: Uri, content: String) {
         try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
-                val document = XWPFDocument()
-                val paragraph = document.createParagraph()
-                val run = paragraph.createRun()
-                run.setText(content)
-                document.write(outputStream)
+                val doc = XWPFDocument()
+                doc.createParagraph().createRun().setText(content)
+                doc.write(outputStream)
+                doc.close()
                 Toast.makeText(this, "DOCX saved successfully", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
@@ -264,31 +264,18 @@ class DownloadActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateListView() {
-        adapter?.clear()
-        adapter?.addAll(fileList.map { stripExtension(it["fileName"] ?: "Unknown" )})
-        adapter?.notifyDataSetChanged()
-    }
-
-    private fun stripExtension(fileName: String): String {
-        val lastIndexOfDot = fileName.lastIndexOf('.')
-        return if (lastIndexOfDot != -1) {
-            fileName.substring(0, lastIndexOfDot)
-        } else {
-            fileName
-        }
-    }
-
     private fun setupSearchView() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                filterFiles(query)
                 return false
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                filterFiles(newText)
-                return false
+                val filteredList = fileList.filter { it["fileName"]?.contains(newText ?: "", ignoreCase = true) == true }
+                adapter?.clear()
+                adapter?.addAll(filteredList.map { stripExtension(it["fileName"] ?: "Unknown") })
+                adapter?.notifyDataSetChanged()
+                return true
             }
         })
     }
@@ -296,38 +283,42 @@ class DownloadActivity : AppCompatActivity() {
     private fun setupRefreshButton() {
         buttonRefresh.setOnClickListener {
             loadFilesFromFirebase()
-            Toast.makeText(this, "Refreshing the files", Toast.LENGTH_SHORT).show()
         }
     }
+
+
+    private fun updateListView() {
+        if (fileList.isEmpty()) {
+            textNoFiles.visibility = View.VISIBLE
+            listViewFiles.visibility = View.GONE
+        } else {
+            textNoFiles.visibility = View.GONE
+            listViewFiles.visibility = View.VISIBLE
+            adapter?.clear()
+            adapter?.addAll(fileList.map { stripExtension(it["fileName"] ?: "Unknown") })
+            adapter?.notifyDataSetChanged()
+        }
+    }
+
 
     private fun setupFilterSpinner() {
-        val filters = listOf("Filter", "Date", "Month", "Year", "Ascending", "Descending", "Numeric")
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filters)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerFilter.adapter = adapter
+        val filterOptions = arrayOf("Date", "Month", "Year", "Ascending", "Descending")
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filterOptions)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerFilter.adapter = spinnerAdapter
 
         spinnerFilter.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val filterOption = filters[position]
-                applyFilter(filterOption)
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                applyFilter(filterOptions[position])
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-    }
-
-    private fun filterFiles(query: String?) {
-        val filteredFiles = fileList.filter {
-            it["fileName"]?.contains(query ?: "", ignoreCase = true) == true
-        }
-        adapter?.clear()
-        adapter?.addAll(filteredFiles.map { it["fileName"] ?: "Unknown" })
-        adapter?.notifyDataSetChanged()
     }
 
     private fun applyFilter(filterOption: String) {
         val sortedFiles = when (filterOption) {
-            "Date" -> fileList.sortedBy { it["fileDate"] }
+            "Date" -> fileList.sortedBy { it["fileDate"]?.toDate()}
             "Month" -> fileList.sortedBy { it["fileMonth"] }
             "Year" -> fileList.sortedBy { it["fileYear"] }
             "Ascending" -> fileList.sortedBy { it["fileName"] }
@@ -336,13 +327,28 @@ class DownloadActivity : AppCompatActivity() {
             else -> fileList
         }
         adapter?.clear()
-        adapter?.addAll(sortedFiles.map { it["fileName"] ?: "Unknown" })
+        adapter?.addAll(sortedFiles.map { stripExtension(it["fileName"] ?: "Unknown") })
         adapter?.notifyDataSetChanged()
     }
 
-    companion object {
-        const val CREATE_FILE_REQUEST_CODE = 1
+    private fun stripExtension(fileName: String): String {
+        return fileName.substringBeforeLast('.', fileName)
     }
-}
 
+
+    companion object {
+        private const val CREATE_FILE_REQUEST_CODE = 1
+    }
+
+
+    fun String.toDate(): Date? {
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return try {
+            format.parse(this)
+        } catch (e: Exception) {
+            Log.e("DownloadActivity", "Failed to parse date: $this", e)
+            null
+        }
+    }
+    }
 

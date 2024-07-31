@@ -71,7 +71,13 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
         customizeGoogleSignInButton(signInButton)
 
         // Google Sign-In button click handler
-        signInButton.setOnClickListener { signInWithGoogle() }
+        signInButton.setOnClickListener {
+            if (NetworkUtil.isNetworkAvailable(this)) {
+                signInWithGoogle()
+            } else {
+                showCustomToast("No internet connection", 2000)
+            }
+        }
 
         // Login TextView click handler to redirect to login page
         findViewById<TextView>(R.id.tvLogin).setOnClickListener {
@@ -91,19 +97,23 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
 
     override fun onConfirm() {
         pendingAccount?.let { account ->
-            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-            FirebaseAuth.getInstance().signInWithCredential(credential).addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    // Sign-in successful
-                    val user = FirebaseAuth.getInstance().currentUser
-                    if (user != null) {
-                        // Check if user already exists in the database
-                        checkIfUserExists(user.uid, user)
+            if (NetworkUtil.isNetworkAvailable(this)) {
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                FirebaseAuth.getInstance().signInWithCredential(credential).addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        // Sign-in successful
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            // Check if user already exists in the database
+                            checkIfUserExists(user.uid, user)
+                        }
+                    } else {
+                        Log.e("SignUpActivity", "Firebase sign-in failed", task.exception)
+                        // Handle sign-in failure
                     }
-                } else {
-                    Log.e("SignUpActivity", "Firebase sign-in failed", task.exception)
-                    // Handle sign-in failure
                 }
+            } else {
+                showCustomToast("No internet connection", 2000)
             }
         }
     }
@@ -116,49 +126,53 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
     }
 
     private fun checkIfUserExists(userId: String, user: FirebaseUser) {
-        database.child("users").child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    // User already exists
-                    showCustomToast("Already you have an account", 1400)
-                    // Redirect to HomeActivity
-                    sessionManager.setLoggedIn(true) // Update login status
-                    sessionManager.saveUserDetails(
-                        User(
-                            id = user.uid,
+        if (NetworkUtil.isNetworkAvailable(this)) {
+            database.child("users").child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // User already exists
+                        showCustomToast("Already you have an account", 1400)
+                        // Redirect to HomeActivity
+                        sessionManager.setLoggedIn(true) // Update login status
+                        sessionManager.saveUserDetails(
+                            User(
+                                id = user.uid,
+                                name = user.displayName.toString(),
+                                email = user.email.toString(),
+                                photoUrl = user.photoUrl?.toString()
+                            )
+                        )
+                        startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                        finish()
+                    } else {
+                        // User does not exist, proceed with registration
+                        val userDetails = User(
+                            id = user.uid, // Assuming UID as ID
                             name = user.displayName.toString(),
                             email = user.email.toString(),
                             photoUrl = user.photoUrl?.toString()
                         )
-                    )
-                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
-                    finish()
-                } else {
-                    // User does not exist, proceed with registration
-                    val userDetails = User(
-                        id = user.uid, // Assuming UID as ID
-                        name = user.displayName.toString(),
-                        email = user.email.toString(),
-                        photoUrl = user.photoUrl?.toString()
-                    )
-                    sessionManager.setLoggedIn(true) // Update login status
-                    sessionManager.saveUserDetails(userDetails)
+                        sessionManager.setLoggedIn(true) // Update login status
+                        sessionManager.saveUserDetails(userDetails)
 
-                    // Store user details in Firebase Realtime Database
-                    storeUserInDatabase(user.uid, userDetails)
+                        // Store user details in Firebase Realtime Database
+                        storeUserInDatabase(user.uid, userDetails)
 
-                    // Redirect to HomeActivity
-                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
-                    showCustomToast("Welcome! Your account has been created.", 2000)
-                    finish()
+                        // Redirect to HomeActivity
+                        startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                        showCustomToast("Welcome! Your account has been created.", 2000)
+                        finish()
+                    }
                 }
-            }
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("SignUpActivity", "Database error: ${error.message}")
-                // Handle database error
-            }
-        })
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("SignUpActivity", "Database error: ${error.message}")
+                    // Handle database error
+                }
+            })
+        } else {
+            showCustomToast("No internet connection", 2000)
+        }
     }
 
     private fun storeUserInDatabase(userId: String, userDetails: User) {
@@ -188,7 +202,6 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
         // Set text color and background color from colors.xml
         googleSignInText.setTextColor(ContextCompat.getColor(this, R.color.sign_in_button_text_color))
         signInButton.setBackgroundColor(ContextCompat.getColor(this, R.color.sign_in_button_background_color))
-
 
         signInButton.background = ContextCompat.getDrawable(this, R.drawable.rounded_corners)
         // Optionally, you can set other customizations like text size, padding, etc.

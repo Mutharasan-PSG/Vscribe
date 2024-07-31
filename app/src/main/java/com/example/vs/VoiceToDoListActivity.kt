@@ -30,14 +30,17 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_to_do_list)
 
+        // Initialize UI components
         editTextTask = findViewById(R.id.edit_text_task)
         buttonAddTask = findViewById(R.id.button_add_task)
         listViewTasks = findViewById(R.id.list_view_tasks)
         speechButton = findViewById(R.id.btn_speech)
 
+        // Setup ListView adapter
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, tasks)
         listViewTasks.adapter = adapter
 
+        // Set click listener for Add Task button
         buttonAddTask.setOnClickListener {
             val task = editTextTask.text.toString()
             if (task.isNotBlank()) {
@@ -47,20 +50,28 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
+        // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
+
+        // Initialize SpeechRecognizer
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 speechButton.setImageResource(R.drawable.voice_frequency)
             }
+
             override fun onBeginningOfSpeech() {
                 speechButton.setImageResource(R.drawable.voice_frequency)
             }
+
             override fun onRmsChanged(rmsdB: Float) {}
+
             override fun onBufferReceived(buffer: ByteArray?) {}
+
             override fun onEndOfSpeech() {
                 speechButton.setImageResource(R.drawable.mic)
             }
+
             override fun onError(error: Int) {
                 Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech", Toast.LENGTH_SHORT).show()
                 speechButton.setImageResource(R.drawable.mic)
@@ -78,14 +89,20 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
 
             override fun onPartialResults(partialResults: Bundle?) {}
+
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
+        // Set click listener for speech button
         speechButton.setOnClickListener {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            speechRecognizer.startListening(intent)
+            if (NetworkUtil.isNetworkAvailable(this)) {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                speechRecognizer.startListening(intent)
+            } else {
+                Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -114,10 +131,10 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 true
             }
             input.contains("voice calculator", ignoreCase = true) -> {
-                startActivity(Intent(this, VoiceCalculatorBottomSheet::class.java))
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
                 true
             }
-
             input.contains("profile", ignoreCase = true) -> {
                 startActivity(Intent(this, ProfileActivity::class.java))
                 true
@@ -147,4 +164,3 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer.destroy()
     }
 }
-

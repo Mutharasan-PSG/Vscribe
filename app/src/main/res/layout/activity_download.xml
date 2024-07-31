@@ -54,6 +54,18 @@
             android:layout_marginTop="14dp"/>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/text_no_files"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Saved files will appear here"
+        android:textSize="18sp"
+        android:textColor="@color/history_item_color"
+        android:layout_below="@id/linear_layout"
+        android:layout_marginTop="250dp"
+        android:layout_centerHorizontal="true"
+        android:visibility="visible" />
+
     <ListView
         android:id="@+id/list_view_files"
         android:layout_width="match_parent"

@@ -1,5 +1,6 @@
 package com.example.vs
 
+import User
 import android.content.Intent
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -28,87 +29,94 @@ class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
+
+        initializeUI()
+        configureGoogleSignIn()
+        setupSpeechRecognizer()
+
+        val user = sessionManager.getUserDetails()
+        user?.let {
+            populateUserDetails(it)
+        }
+    }
+
+    private fun initializeUI() {
         btnSpeech = findViewById(R.id.btn_speech)
+        val signOutButton: LinearLayout = findViewById(R.id.btn_sign_out)
 
-        sessionManager = SessionManager(this)
+        signOutButton.setOnClickListener {
+            signOut()
+        }
 
-        // Configure Google Sign-In
+        btnSpeech.setOnClickListener {
+            startSpeechRecognition()
+        }
+    }
+
+    private fun configureGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id)) // Ensure this is correct
             .requestEmail()
             .build()
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
+        sessionManager = SessionManager(this)
+    }
 
-        val user = sessionManager.getUserDetails()
-
-        if (user != null) {
-            val nameTextView: TextView = findViewById(R.id.profile_name)
-            val emailTextView: TextView = findViewById(R.id.profile_email)
-            val profileImageView: ImageView = findViewById(R.id.profile_image)
-            val signOutButton: LinearLayout = findViewById(R.id.btn_sign_out)
-            btnSpeech = findViewById(R.id.btn_speech)
-
-            nameTextView.text = user.name
-            emailTextView.text = user.email
-
-            // Load profile image using Glide
-            Glide.with(this)
-                .load(user.photoUrl)
-                .placeholder(R.drawable.ic_default_profile_image)
-                .error(R.drawable.ic_default_profile_image)
-                .into(profileImageView)
-
-            // Set up sign-out button click listener
-            signOutButton.setOnClickListener {
-                signOut()
+    private fun setupSpeechRecognizer() {
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                Log.d("SpeechRecognizer", "Ready for speech")
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
-            // Initialize SpeechRecognizer
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
-            speechRecognizer.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) {
-                    Log.d("SpeechRecognizer", "Ready for speech")
-                    btnSpeech.setImageResource(R.drawable.voice_frequencyy)
-                }
-
-                override fun onBeginningOfSpeech() {
-                    Log.d("SpeechRecognizer", "Beginning of speech")
-                    btnSpeech.setImageResource(R.drawable.voice_frequencyy)
-                }
-
-                override fun onRmsChanged(rmsdB: Float) {}
-
-                override fun onBufferReceived(buffer: ByteArray?) {}
-
-                override fun onEndOfSpeech() {
-                    Log.d("SpeechRecognizer", "End of speech")
-                    btnSpeech.setImageResource(R.drawable.mic)
-                }
-
-                override fun onError(error: Int) {
-                    Log.e("SpeechRecognizer", "Error: $error")
-                    btnSpeech.setImageResource(R.drawable.mic)
-                }
-
-                override fun onResults(results: Bundle?) {
-                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { resultList ->
-                        val recognizedText = resultList[0]
-                        handleSpeechResult(recognizedText)
-                    }
-                    btnSpeech.setImageResource(R.drawable.mic)
-                }
-
-                override fun onPartialResults(partialResults: Bundle?) {}
-
-                override fun onEvent(eventType: Int, params: Bundle?) {}
-            })
-
-            // Set click listener for speech button
-            btnSpeech.setOnClickListener {
-                startSpeechRecognition()
+            override fun onBeginningOfSpeech() {
+                Log.d("SpeechRecognizer", "Beginning of speech")
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
-        }
+
+            override fun onRmsChanged(rmsdB: Float) {}
+
+            override fun onBufferReceived(buffer: ByteArray?) {}
+
+            override fun onEndOfSpeech() {
+                Log.d("SpeechRecognizer", "End of speech")
+                btnSpeech.setImageResource(R.drawable.mic)
+            }
+
+            override fun onError(error: Int) {
+                Log.e("SpeechRecognizer", "Error: $error")
+                btnSpeech.setImageResource(R.drawable.mic)
+            }
+
+            override fun onResults(results: Bundle?) {
+                results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.let { resultList ->
+                    val recognizedText = resultList[0]
+                    handleSpeechResult(recognizedText)
+                }
+                btnSpeech.setImageResource(R.drawable.mic)
+            }
+
+            override fun onPartialResults(partialResults: Bundle?) {}
+
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+    }
+
+    private fun populateUserDetails(user: User) {
+        val nameTextView: TextView = findViewById(R.id.profile_name)
+        val emailTextView: TextView = findViewById(R.id.profile_email)
+        val profileImageView: ImageView = findViewById(R.id.profile_image)
+
+        nameTextView.text = user.name
+        emailTextView.text = user.email
+
+        Glide.with(this)
+            .load(user.photoUrl)
+            .placeholder(R.drawable.ic_default_profile_image)
+            .error(R.drawable.ic_default_profile_image)
+            .into(profileImageView)
     }
 
     private fun startSpeechRecognition() {
@@ -141,21 +149,18 @@ class ProfileActivity : AppCompatActivity() {
             recognizedText.contains("Voice ToDoList", ignoreCase = true) -> {
                 startActivity(Intent(this, VoiceToDoListActivity::class.java))
             }
+            else -> {
+                Log.d("SpeechRecognizer", "Command not recognized: $recognizedText")
+            }
         }
     }
 
     private fun signOut() {
-        // Sign out from Firebase
         FirebaseAuth.getInstance().signOut()
 
-        // Sign out from Google Sign-In
         googleSignInClient.signOut().addOnCompleteListener(this) {
-            // Clear session data
             sessionManager.clearSession()
-
-            // Redirect to LoginActivity
-            val intent = Intent(this, SignUpActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SignUpActivity::class.java))
             finish()
         }
     }

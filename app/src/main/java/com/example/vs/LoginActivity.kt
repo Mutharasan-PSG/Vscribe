@@ -65,14 +65,18 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
-        // Google Sign-In button click handler
-
-
-        // Google Sign-In button click handler
+        // Customize Google Sign-In button
         val signInButton = findViewById<LinearLayout>(R.id.btn_google_sign_in)
         customizeGoogleSignInButton(signInButton)
 
-        signInButton.setOnClickListener { signInWithGoogle() }
+        // Google Sign-In button click handler
+        signInButton.setOnClickListener {
+            if (NetworkUtil.isNetworkAvailable(this)) {
+                signInWithGoogle()
+            } else {
+                showCustomToast("No internet connection", 2000)
+            }
+        }
 
         // SignUp text view click handler
         findViewById<TextView>(R.id.tv_signup_clickable).setOnClickListener {
@@ -106,36 +110,40 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun checkIfUserExists(userId: String, user: FirebaseUser) {
-        database.child("users").child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    // User already exists
-                    val userDetails = User(
-                        id = user.uid, // Assuming UID as ID
-                        name = user.displayName.toString(),
-                        email = user.email.toString(),
-                        photoUrl = user.photoUrl?.toString()
-                    )
-                    sessionManager.setLoggedIn(true) // Update login status
-                    sessionManager.saveUserDetails(userDetails)
+        if (NetworkUtil.isNetworkAvailable(this)) {
+            database.child("users").child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        // User already exists
+                        val userDetails = User(
+                            id = user.uid, // Assuming UID as ID
+                            name = user.displayName.toString(),
+                            email = user.email.toString(),
+                            photoUrl = user.photoUrl?.toString()
+                        )
+                        sessionManager.setLoggedIn(true) // Update login status
+                        sessionManager.saveUserDetails(userDetails)
 
-                    // Redirect to HomeActivity
-                    startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
-                    finish()
-                } else {
-                    // User does not exist, redirect to SignUpActivity
-                    showCustomToast("Please Register your account", 1800)
-                    FirebaseAuth.getInstance().signOut()
-                    startActivity(Intent(this@LoginActivity, SignUpActivity::class.java))
-                    finish()
+                        // Redirect to HomeActivity
+                        startActivity(Intent(this@LoginActivity, HomeActivity::class.java))
+                        finish()
+                    } else {
+                        // User does not exist, redirect to SignUpActivity
+                        showCustomToast("Please Register your account", 1800)
+                        FirebaseAuth.getInstance().signOut()
+                        startActivity(Intent(this@LoginActivity, SignUpActivity::class.java))
+                        finish()
+                    }
                 }
-            }
 
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("LoginActivity", "Database error: ${error.message}")
-                // Handle database error
-            }
-        })
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("LoginActivity", "Database error: ${error.message}")
+                    // Handle database error
+                }
+            })
+        } else {
+            showCustomToast("No internet connection", 2000)
+        }
     }
 
     private fun showCustomToast(message: String, duration: Int) {
@@ -148,7 +156,6 @@ class LoginActivity : AppCompatActivity() {
         }, duration.toLong())
     }
 
-
     private fun customizeGoogleSignInButton(signInButton: LinearLayout) {
         val googleLogo = signInButton.findViewById<ImageView>(R.id.google_logo)
         val googleSignInText = signInButton.findViewById<TextView>(R.id.google_sign_in_text)
@@ -157,10 +164,7 @@ class LoginActivity : AppCompatActivity() {
         googleSignInText.setTextColor(ContextCompat.getColor(this, R.color.sign_in_button_text_color))
         signInButton.setBackgroundColor(ContextCompat.getColor(this, R.color.sign_in_button_background_color))
 
-
         signInButton.background = ContextCompat.getDrawable(this, R.drawable.rounded_corners)
         // Optionally, you can set other customizations like text size, padding, etc.
     }
-
-
 }

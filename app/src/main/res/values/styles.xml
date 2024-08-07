@@ -1,6 +1,10 @@
 <resources>
     <!-- Base application theme -->
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+            <!-- Customize your theme here -->
+            <item name="android:fontFamily">@font/poppins</item> <!-- Use the font family XML if you created one -->
+
         <!-- Primary color -->
         <item name="colorPrimary">@color/BLUE</item>
         <item name="colorPrimaryDark">@color/BLUE</item>

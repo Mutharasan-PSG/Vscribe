@@ -13,6 +13,7 @@
     <string name="download_section">Download Section</string>
 
     <string-array name="filter_options">
+
         <item>Date</item>
         <item>Month</item>
         <item>Year</item>
@@ -22,6 +23,7 @@
     </string-array>
 
     <string-array name="file_type_options">
+
         <item>TXT</item>
         <item>DOCX</item>
         <item>PDF</item>

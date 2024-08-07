@@ -22,7 +22,7 @@
         android:layout_height="42dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginStart="74dp"
+        android:layout_marginStart="72dp"
         android:padding="7dp"
         android:layout_below="@id/AppIcon"
         android:background="@drawable/rounded_corners"
@@ -38,13 +38,14 @@
             android:layout_marginStart="8dp"
             android:src="@drawable/google_logo"
             android:scaleType="fitCenter"
-            android:layout_marginEnd="20dp" />
+            android:layout_marginEnd="10dp" />
 
         <TextView
             android:id="@+id/google_sign_in_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/sign_in_with_google"
+            android:fontFamily="@font/poppins_medium"
             android:textColor="@color/sign_in_button_text_color"
             android:textSize="18sp" />
     </LinearLayout>
@@ -59,6 +60,7 @@
 
         <TextView
             android:id="@+id/DontHaveAccount"
+            android:fontFamily="@font/poppins"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Dont have an account? "
@@ -69,9 +71,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Sign up"
+            android:fontFamily="@font/poppins_medium"
             android:textColor="@color/BLUE"
             android:textSize="16sp"
-            android:textStyle="bold" />
+            />
 
     </LinearLayout>
 </RelativeLayout>

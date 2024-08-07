@@ -5,15 +5,18 @@
         android:id="@+id/nav_home"
         android:icon="@drawable/home_"
         android:title="Home"
+        android:fontFamily="@font/poppins"
         tools:ignore="HardcodedText" />
     <item
         android:id="@+id/nav_download"
         android:icon="@drawable/download"
         android:title="Downloads"
+        android:fontFamily="@font/poppins"
         tools:ignore="HardcodedText" />
     <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/profile_blue"
         android:title="Profile"
+        android:fontFamily="@font/poppins"
         tools:ignore="HardcodedText" />
 </menu>

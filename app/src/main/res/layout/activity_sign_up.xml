@@ -37,13 +37,14 @@
             android:layout_marginStart="8dp"
             android:src="@drawable/google_logo"
             android:scaleType="fitCenter"
-            android:layout_marginEnd="20dp" />
+            android:layout_marginEnd="10dp" />
 
         <TextView
             android:id="@+id/google_sign_in_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/sign_up_with_google"
+            android:fontFamily="@font/poppins_medium"
             android:textColor="@color/sign_in_button_text_color"
             android:textSize="18sp" />
     </LinearLayout>
@@ -65,9 +66,10 @@
 
             <TextView
                 android:id="@+id/tvAlreadyHaveAccount"
+                android:fontFamily="@font/poppins"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="22dp"
+                android:layout_marginStart="10dp"
                 android:text="Already have an account? "
                 android:textSize="16sp" />
 
@@ -76,9 +78,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Login"
+                android:fontFamily="@font/poppins_medium"
                 android:textColor="@color/BLUE"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="16sp" />
         </LinearLayout>
 
         <TextView
@@ -88,6 +90,7 @@
             android:layout_centerHorizontal="true"
             android:layout_marginTop="12dp"
             android:gravity="center"
+            android:fontFamily="@font/poppins"
             android:text="By signing up you accept our Terms of Use and Privacy Policy"
             android:textColor="@color/black"
             android:textSize="14sp" />

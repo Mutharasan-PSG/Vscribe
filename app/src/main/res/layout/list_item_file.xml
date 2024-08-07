@@ -8,6 +8,7 @@
     android:layout_marginBottom="7dp"
     android:background="@color/history_item_color"
     android:orientation="horizontal"
+    android:fontFamily="@font/poppins"
     android:padding="8dp">
 
     <TextView

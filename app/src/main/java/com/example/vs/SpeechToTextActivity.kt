@@ -2,6 +2,8 @@ package com.example.vs
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -32,6 +34,13 @@ class SpeechToTextActivity : AppCompatActivity() {
     private lateinit var database: DatabaseReference
     private lateinit var btnSpeech: ImageButton
 
+    private val inactivityTimeoutMillis: Long = 10000 // 10 seconds
+    private val inactivityHandler = Handler(Looper.getMainLooper())
+    private val inactivityRunnable = Runnable {
+        stopSpeechRecognition()
+       // Toast.makeText(this, "Speech recognition timed out due to inactivity", Toast.LENGTH_SHORT).show()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_speech_to_text)
@@ -42,14 +51,22 @@ class SpeechToTextActivity : AppCompatActivity() {
         btnSpeech = findViewById(R.id.btn_speech)
 
         val spinnerLanguage: Spinner = findViewById(R.id.spinner_language)
-        val languages = listOf("en_US", "ta_IN", "te_IN", "ml_IN", "hi_IN")
+        val languages = listOf("English", "Tamil", "Telugu", "Malayalam", "Hindi")
+        val languageCodes = mapOf(
+            "English" to "en_US",
+            "Tamil" to "ta_IN",
+            "Telugu" to "te_IN",
+            "Malayalam" to "ml_IN",
+            "Hindi" to "hi_IN"
+        )
+
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languages)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerLanguage.adapter = adapter
 
         spinnerLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedLanguage = languages[position]
+                selectedLanguage = languageCodes[languages[position]] ?: "en_US"
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -58,7 +75,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         btnSpeech.setOnClickListener { startSpeechRecognition() }
 
         buttonRefresh.setOnClickListener {
-            Toast.makeText(this, "Listening your speech", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
             textViewTranscribed.text = ""
             startSpeechRecognition()
         }
@@ -77,38 +94,60 @@ class SpeechToTextActivity : AppCompatActivity() {
     }
 
     private fun startSpeechRecognition() {
+        stopSpeechRecognition() // Ensure previous recognizer is stopped
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 btnSpeech.setImageResource(R.drawable.voice_frequencyy)
+                resetInactivityTimeout()
             }
+
             override fun onBeginningOfSpeech() {
                 btnSpeech.setImageResource(R.drawable.voice_frequencyy)
+                resetInactivityTimeout()
             }
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
+
+            override fun onRmsChanged(rmsdB: Float) {
+                resetInactivityTimeout()
+            }
+
+            override fun onBufferReceived(buffer: ByteArray?) {
+                resetInactivityTimeout()
+            }
+
             override fun onEndOfSpeech() {
                 btnSpeech.setImageResource(R.drawable.mic)
+                resetInactivityTimeout()
             }
+
             override fun onError(error: Int) {
                 btnSpeech.setImageResource(R.drawable.mic)
+                resetInactivityTimeout()
             }
+
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
                     val spokenText = matches[0]
-                    if (isFindReplaceCommand(spokenText)) {
-                        handleFindReplace(spokenText)
+                    val formattedText = handleFormattingCommands(spokenText)
+                    if (isFindReplaceCommand(formattedText)) {
+                        handleFindReplace(formattedText)
                     } else {
-                        textViewTranscribed.append(spokenText + " ")
+                        textViewTranscribed.append(formattedText + " ")
                     }
-                    handleNavigationCommands(spokenText)
+                    handleNavigationCommands(formattedText)
                 }
                 btnSpeech.setImageResource(R.drawable.mic)
+                inactivityHandler.removeCallbacks(inactivityRunnable) // Remove handler on success
             }
 
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
+            override fun onPartialResults(partialResults: Bundle?) {
+                resetInactivityTimeout()
+            }
+
+            override fun onEvent(eventType: Int, params: Bundle?) {
+                resetInactivityTimeout()
+            }
         })
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -118,32 +157,66 @@ class SpeechToTextActivity : AppCompatActivity() {
         }
 
         speechRecognizer.startListening(intent)
+        resetInactivityTimeout()
+    }
 
+    private fun stopSpeechRecognition() {
+        if (::speechRecognizer.isInitialized) {
+            speechRecognizer.stopListening()
+            speechRecognizer.cancel()
+            speechRecognizer.destroy()
+        }
+        inactivityHandler.removeCallbacks(inactivityRunnable)
+    }
+
+    private fun resetInactivityTimeout() {
+        inactivityHandler.removeCallbacks(inactivityRunnable)
+        inactivityHandler.postDelayed(inactivityRunnable, inactivityTimeoutMillis)
+    }
+
+    private fun handleFormattingCommands(spokenText: String): String {
+        var formattedText = spokenText
+        formattedText = formattedText.replace("comma", ",")
+        formattedText = formattedText.replace("new line", "\n")
+        formattedText = formattedText.replace("next line", "\n")
+        formattedText = formattedText.replace("period", ".")
+        formattedText = formattedText.replace("exclamation", "!")
+        formattedText = formattedText.replace("question mark", "?")
+        formattedText = formattedText.replace("hyphen", "-")
+        formattedText = formattedText.replace("underscore", "_")
+        formattedText = formattedText.replace("under score", "_")
+        formattedText = formattedText.replace("quotes", "\"")
+        formattedText = formattedText.replace("double quotes", "\"\" ")
+        formattedText = formattedText.replace("single quotes", "'")
+        // Add more replacements as needed
+
+        return formattedText
     }
 
     private fun handleNavigationCommands(spokenText: String) {
         when {
-            spokenText.contains("Home page", ignoreCase = true) -> {
+            spokenText.startsWith("Home page", ignoreCase = true) -> {
                 startActivity(Intent(this, HomeActivity::class.java))
             }
-            spokenText.contains("Speech To Text", ignoreCase = true) -> {
+            spokenText.startsWith("Speech To Text", ignoreCase = true) -> {
                 startActivity(Intent(this, SpeechToTextActivity::class.java))
             }
-            spokenText.contains("Voice Calculator", ignoreCase = true) -> {
+            spokenText.startsWith("Voice Calculator", ignoreCase = true) -> {
                 val bottomSheet = VoiceCalculatorBottomSheet()
                 bottomSheet.show(supportFragmentManager, bottomSheet.tag)
             }
-            spokenText.contains("Voice To Do List", ignoreCase = true) -> {
+            spokenText.startsWith("Voice To Do List", ignoreCase = true) -> {
                 startActivity(Intent(this, VoiceToDoListActivity::class.java))
             }
-            spokenText.contains("Profile", ignoreCase = true) -> {
+            spokenText.startsWith("Profile", ignoreCase = true) -> {
                 startActivity(Intent(this, ProfileActivity::class.java))
             }
-            spokenText.contains("Downloads", ignoreCase = true) -> {
+            spokenText.startsWith("Downloads", ignoreCase = true) -> {
                 startActivity(Intent(this, DownloadActivity::class.java))
             }
         }
     }
+
 
     private fun isFindReplaceCommand(spokenText: String): Boolean {
         val words = spokenText.split(" ")
@@ -188,10 +261,11 @@ class SpeechToTextActivity : AppCompatActivity() {
     private fun saveFileToFirebase(fileName: String, transcribedText: String) {
         val sdf = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
         val currentMonth = sdf.format(Date())
-
+        val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
         val fileId = database.push().key ?: return
         val userId = SessionManager(this).getUserId() ?: "unknown"
         val fileData = mapOf(
+            "timestamp" to currentTime,
             "fileId" to fileId,
             "fileName" to "$fileName.txt",
             "content" to transcribedText,

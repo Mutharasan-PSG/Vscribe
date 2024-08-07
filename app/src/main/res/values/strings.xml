@@ -17,8 +17,8 @@
         <item>Month</item>
         <item>Year</item>
         <item>File Type</item>
-        <item>Ascending</item>
-        <item>Descending</item>
+        <item>A-Z</item>
+        <item>Z-A</item>
     </string-array>
 
     <string-array name="file_type_options">
@@ -31,5 +31,7 @@
     <string name="AppLogo" />
     <string name="sign_up_with_google">Sign up with Google</string>
     <string name="version_2_0">Version 2.0</string>
+    <string name="speech_result">You said: %1$s. Result is: %2$s</string>
+    <string name="invalid_input_format">Invalid input format</string>
 
 </resources>

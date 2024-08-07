@@ -157,6 +157,7 @@ class DownloadActivity : AppCompatActivity() {
                     val fileData = fileSnapshot.value as? Map<String, String>
                     fileData?.let { fileList.add(it) }
                 }
+                fileList.sortByDescending { it["timestamp"] }
                 updateListView()
             }
 
@@ -180,13 +181,13 @@ class DownloadActivity : AppCompatActivity() {
     }
 
     private fun showFileTypeSelectionDialog(fileName: String) {
-        val fileTypes = arrayOf("TXT", "PDF", "DOCX")
+        val fileTypes = arrayOf("TXT", /*"PDF",*/ "DOCX")
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Select File Type")
         builder.setItems(fileTypes) { _, which ->
             val selectedFileType = fileTypes[which]
             val newFileName = when (selectedFileType) {
-                "PDF" -> fileName.replaceAfterLast('.', "pdf")
+             //   "PDF" -> fileName.replaceAfterLast('.', "pdf")
                 "DOCX" -> fileName.replaceAfterLast('.', "docx")
                 else -> fileName.replaceAfterLast('.', "txt")
             }
@@ -302,7 +303,7 @@ class DownloadActivity : AppCompatActivity() {
 
 
     private fun setupFilterSpinner() {
-        val filterOptions = arrayOf("Date", "Month", "Year", "Ascending", "Descending")
+        val filterOptions = arrayOf("Date", "Month", "Year", "A-Z", "Z-A")
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filterOptions)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFilter.adapter = spinnerAdapter
@@ -315,15 +316,20 @@ class DownloadActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
-
     private fun applyFilter(filterOption: String) {
         val sortedFiles = when (filterOption) {
-            "Date" -> fileList.sortedBy { it["fileDate"]?.toDate()}
+            "Date" -> fileList.sortedBy { it["fileDate"]?.toDate() ?: Date(0) }
             "Month" -> fileList.sortedBy { it["fileMonth"] }
             "Year" -> fileList.sortedBy { it["fileYear"] }
-            "Ascending" -> fileList.sortedBy { it["fileName"] }
-            "Descending" -> fileList.sortedByDescending { it["fileName"] }
-            "Numeric" -> fileList.sortedBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE }
+            "A-Z" -> fileList.sortedWith(compareBy { it["fileName"]?.let { name ->
+                // Convert to lowercase for case-insensitive comparison
+                name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
+            } ?: "" })
+            "Z-A" -> fileList.sortedWith(compareByDescending { it["fileName"]?.let { name ->
+                // Convert to lowercase for case-insensitive comparison
+                name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
+            } ?: "" })
+            "Numeric" -> fileList.sortedWith(compareBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE })
             else -> fileList
         }
         adapter?.clear()

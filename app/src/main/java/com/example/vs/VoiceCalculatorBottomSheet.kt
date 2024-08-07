@@ -99,11 +99,12 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
 
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (matches != null && matches.isNotEmpty()) {
+                if (!matches.isNullOrEmpty()) {
                     val input = matches[0]
                     inputTextView.text = input
                     if (!handleNavigationCommands(input)) {
                         handleInput(input)
+
                     }
                 }
                 startButton.setImageResource(R.drawable.mic)
@@ -125,10 +126,33 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }
-
+    private fun convertLargeNumbers(input: String): String {
+        return input
+            .replace(Regex("(\\d+(\\.\\d+)?)\\s*lakh(s)?")) { matchResult ->
+                val number = matchResult.groupValues[1].toDouble()
+                (number * 100000).toString()
+            }
+            .replace(Regex("(\\d+(\\.\\d+)?)\\s*crore(s)?")) { matchResult ->
+                val number = matchResult.groupValues[1].toDouble()
+                (number * 10000000).toString()
+            }
+            .replace(Regex("(\\d+(\\.\\d+)?)\\s*million(s)?")) { matchResult ->
+                val number = matchResult.groupValues[1].toDouble()
+                (number * 1000000).toString()
+            }
+            .replace(Regex("(\\d+(\\.\\d+)?)\\s*billion(s)?")) { matchResult ->
+                val number = matchResult.groupValues[1].toDouble()
+                (number * 1000000000).toString()
+            }
+            .replace(Regex("(\\d+(\\.\\d+)?)\\s*trillion(s)?")) { matchResult ->
+                val number = matchResult.groupValues[1].toDouble()
+                (number * 1000000000000).toString()
+            }
+    }
     private fun handleInput(input: String) {
         try {
             var expressionString = input.lowercase(Locale.getDefault())
+            expressionString = convertLargeNumbers(expressionString)
             expressionString = expressionString
                 .replace("plus", "+")
                 .replace("add", "+")
@@ -138,6 +162,8 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("multiplied by", "*")
                 .replace("multiply", "*")
                 .replace("divided by", "/")
+                .replace("divide by", "/")
+                .replace("divide", "/")
                 .replace("by", "/")
                 .replace("into", "*")
                 .replace("power", "^")
@@ -145,6 +171,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("square", "^2")
                 .replace("cube", "^3")
                 .replace("square root", "sqrt")
+                .replace("square root of", "sqrt")
                 .replace("root", "sqrt")
                 .replace("sine", "sin")
                 .replace("cosine", "cos")
@@ -174,7 +201,6 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 .replace("logarithm", "log")
                 .replace("natural logarithm", "ln")
                 .replace("log base 2", "log2")
-                //   .replace("absolute value", "abs")
                 .replace("factorial", "factorial")
                 .replace("result", lastResult.toString())
                 .replace("answer", lastResult.toString())
@@ -201,9 +227,13 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             } else {
                 result.toString()
             }
+
+            // Update the resultTextView to show only the result
             resultTextView.text = resultString
 
-            speakOut("You said: $input. Result is: $resultString")
+            // Use text-to-speech to speak the full message
+            val ttsMessage = getString(R.string.speech_result, input, resultString)
+            speakOut(ttsMessage)
 
             historyList.add("Input: $input | Result: $resultString")
             historyAdapter.notifyDataSetChanged()
@@ -211,10 +241,13 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             saveHistory(input, resultString)
 
         } catch (e: Exception) {
-            resultTextView.text = "Invalid input format"
-            speakOut("Invalid input format")
+            val errorMessage = getString(R.string.invalid_input_format)
+            resultTextView.text = errorMessage
+            speakOut(errorMessage)
         }
     }
+
+
 
     private fun handleNavigationCommands(input: String): Boolean {
         return when {
@@ -315,3 +348,4 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         textToSpeech.shutdown()
     }
 }
+

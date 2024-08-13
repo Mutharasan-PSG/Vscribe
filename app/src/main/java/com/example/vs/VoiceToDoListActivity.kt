@@ -100,6 +100,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                 speechRecognizer.startListening(intent)
+                Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
             }

@@ -13,11 +13,6 @@
     <string name="download_section">Download Section</string>
 
     <string-array name="filter_options">
-
-        <item>Date</item>
-        <item>Month</item>
-        <item>Year</item>
-        <item>File Type</item>
         <item>A-Z</item>
         <item>Z-A</item>
     </string-array>

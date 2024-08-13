@@ -95,6 +95,7 @@ class HomeActivity : AppCompatActivity() {
         // Set click listener for speech button
         btnSpeech.setOnClickListener {
             startSpeechRecognition()
+            Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -152,6 +153,7 @@ class HomeActivity : AppCompatActivity() {
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
         }
         speechRecognizer.startListening(intent)
+
     }
 
     private fun isInternetAvailable(): Boolean {

@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -50,6 +51,7 @@ class ProfileActivity : AppCompatActivity() {
 
         btnSpeech.setOnClickListener {
             startSpeechRecognition()
+            Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
         }
     }
 

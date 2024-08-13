@@ -72,7 +72,8 @@ class SpeechToTextActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        btnSpeech.setOnClickListener { startSpeechRecognition() }
+        btnSpeech.setOnClickListener { startSpeechRecognition()
+            Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()}
 
         buttonRefresh.setOnClickListener {
             Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()

@@ -108,6 +108,7 @@ class DownloadActivity : AppCompatActivity() {
 
         btnSpeech.setOnClickListener {
             startSpeechRecognition()
+            Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -284,6 +285,7 @@ class DownloadActivity : AppCompatActivity() {
     private fun setupRefreshButton() {
         buttonRefresh.setOnClickListener {
             loadFilesFromFirebase()
+            Toast.makeText(this, "Refreshing and loading the files...", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -303,7 +305,7 @@ class DownloadActivity : AppCompatActivity() {
 
 
     private fun setupFilterSpinner() {
-        val filterOptions = arrayOf("Date", "Month", "Year", "A-Z", "Z-A")
+        val filterOptions = arrayOf("A-Z", "Z-A")
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, filterOptions)
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerFilter.adapter = spinnerAdapter
@@ -318,9 +320,9 @@ class DownloadActivity : AppCompatActivity() {
     }
     private fun applyFilter(filterOption: String) {
         val sortedFiles = when (filterOption) {
-            "Date" -> fileList.sortedBy { it["fileDate"]?.toDate() ?: Date(0) }
-            "Month" -> fileList.sortedBy { it["fileMonth"] }
-            "Year" -> fileList.sortedBy { it["fileYear"] }
+           // "Date" -> fileList.sortedBy { it["fileDate"]?.toDate() ?: Date(0) }
+          //  "Month" -> fileList.sortedBy { it["fileMonth"] }
+         //   "Year" -> fileList.sortedBy { it["fileYear"] }
             "A-Z" -> fileList.sortedWith(compareBy { it["fileName"]?.let { name ->
                 // Convert to lowercase for case-insensitive comparison
                 name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())

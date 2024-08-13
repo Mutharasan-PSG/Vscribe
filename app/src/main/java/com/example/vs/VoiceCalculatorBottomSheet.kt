@@ -66,6 +66,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
             speechRecognizer.startListening(intent)
+            Toast.makeText(requireContext(), "Listening to your inputs...", Toast.LENGTH_SHORT).show()
         }
 
         fetchHistory()
@@ -301,7 +302,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private fun saveHistory(input: String, result: String) {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("users").child(it.uid).child("history")
+            val userHistoryRef = database.child("users").child(it.uid).child("Calculator_history")
             val historyItem = mapOf("input" to input, "result" to result)
             userHistoryRef.push().setValue(historyItem)
         }
@@ -310,7 +311,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private fun fetchHistory() {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("users").child(it.uid).child("history")
+            val userHistoryRef = database.child("users").child(it.uid).child("Calculator_history")
             userHistoryRef.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     historyList.clear()

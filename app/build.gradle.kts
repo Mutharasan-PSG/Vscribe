@@ -57,6 +57,7 @@ dependencies {
     // Room Database
     implementation ("androidx.room:room-runtime:2.6.1")
     implementation(libs.firebase.storage.ktx)
+    implementation(libs.annotations)
     kapt ("androidx.room:room-compiler:2.6.1")
 
     implementation ("net.objecthunter:exp4j:0.4.8")

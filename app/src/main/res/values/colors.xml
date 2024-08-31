@@ -21,6 +21,7 @@
 
     <!-- Windows logo color for buttons -->
         <color name="colorPrimary">#0078D4</color>
+    <color name="RED">#FF5733</color>
 
         <!-- Darker shade of primary color -->
         <color name="colorPrimaryDark">#0078D4</color>

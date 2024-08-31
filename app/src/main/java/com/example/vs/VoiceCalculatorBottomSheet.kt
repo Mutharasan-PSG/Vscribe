@@ -117,6 +117,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         })
     }
 
+
     override fun onStart() {
         super.onStart()
         val dialog = dialog

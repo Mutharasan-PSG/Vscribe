@@ -13,6 +13,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.Toast
@@ -37,6 +38,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var speechRecognizer: SpeechRecognizer
 
+    private lateinit var historyButton: ImageButton
     private var taskName: String? = null
     private var isWaitingForTaskTime = false
 
@@ -59,6 +61,13 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
 
+
+        val btnHistory = findViewById<ImageButton>(R.id.btn_history)
+        btnHistory.setOnClickListener {
+            // Start the history activity
+            val intent = Intent(this, HistoryActivity::class.java)
+            startActivity(intent)
+        }
         // Initialize SpeechRecognizer
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
@@ -77,9 +86,15 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             override fun onEndOfSpeech() {
                 speechButton.setImageResource(R.drawable.mic)
             }
-
             override fun onError(error: Int) {
-                Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech", Toast.LENGTH_SHORT).show()
+                // Log the error for debugging
+                Log.e("SpeechRecognizer", "Error: $error")
+                // Handle specific errors and ensure the recognizer is restarted if needed
+                Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech: $error", Toast.LENGTH_SHORT).show()
+                if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                    // You can restart the recognizer here if needed
+                    startListening()
+                }
                 speechButton.setImageResource(R.drawable.mic)
             }
 
@@ -100,7 +115,6 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-
         // Set click listener for speech button
         speechButton.setOnClickListener {
             if (NetworkUtil.isNetworkAvailable(this)) {
@@ -129,24 +143,33 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun startListening() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+        }
         speechRecognizer.startListening(intent)
         Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
     }
 
+
     private fun startTaskInputTimeout() {
+        taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Remove any previous callbacks
         taskInputTimeoutHandler = Handler(Looper.getMainLooper())
         taskInputTimeoutHandler?.postDelayed({
             if (isWaitingForTaskTime) {
+                // Stop listening and show timeout message
+                speechRecognizer.stopListening()
                 textToSpeech.speak("No task time provided. Operation terminated.", TextToSpeech.QUEUE_FLUSH, null, null)
             } else {
+                // Stop listening and show timeout message
+                speechRecognizer.stopListening()
                 textToSpeech.speak("No task name provided. Operation terminated.", TextToSpeech.QUEUE_FLUSH, null, null)
             }
             resetTaskInput()
         }, 10000) // 10 seconds timeout
     }
+
 
 
     private fun handleTaskNameInput(input: String) {
@@ -229,18 +252,52 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-
     private fun parseTime(timing: String): Long {
         val calendar = Calendar.getInstance()
+        val now = Calendar.getInstance()
 
         // Normalize timing to handle "p.m." and "pm"
-        val normalizedTiming = timing.replace("p.m.", "pm").replace("a.m.", "am")
+        val normalizedTiming = timing.replace("p.m.", "pm")
+            .replace("a.m.", "am")
+            .replace("o'clock", "")
+            .replace(" ", "")
+
+        // Handle relative times
+        if (normalizedTiming.contains("tomorrow")) {
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            return calendar.timeInMillis
+        }
+
+        val daysOfWeek = listOf("sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday")
+        val nowDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+
+        for (day in daysOfWeek) {
+            if (normalizedTiming.contains(day)) {
+                val targetDayOfWeek = daysOfWeek.indexOf(day) + 1 // Calendar.DAY_OF_WEEK is 1-based
+                val daysUntilTarget = if (targetDayOfWeek >= nowDayOfWeek) {
+                    targetDayOfWeek - nowDayOfWeek
+                } else {
+                    targetDayOfWeek + 7 - nowDayOfWeek
+                }
+                calendar.add(Calendar.DAY_OF_YEAR, daysUntilTarget)
+                return calendar.timeInMillis
+            }
+        }
+
+        if (normalizedTiming.contains("nextweek")) {
+            calendar.add(Calendar.WEEK_OF_YEAR, 1)
+            return calendar.timeInMillis
+        }
 
         // Define various time formats
         val timePatterns = listOf(
+            "h:mmaa", // e.g., 2:58pm, 7:00pm, 7pm
+            "hmmaa",  // e.g., 258pm, 7pm
             "h:mm a", // e.g., 7:00 PM
             "H:mm",   // e.g., 14:00
-            "h:mm"    // e.g., 7:00
+            "h:mm",
+            "h a",    // e.g., 2 pm, 7 am
+            "ha"      // e.g., 7:00
         )
 
         for (pattern in timePatterns) {
@@ -256,13 +313,17 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     calendar.set(Calendar.SECOND, 0)
                     calendar.set(Calendar.MILLISECOND, 0)
 
-                    // Adjust to today
-                    calendar.set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR))
-                    calendar.set(Calendar.DAY_OF_YEAR, Calendar.getInstance().get(Calendar.DAY_OF_YEAR))
-                    return calendar.timeInMillis
+                    // Adjust for times that have already passed today
+                    return if (calendar.before(now)) {
+                        calendar.add(Calendar.DAY_OF_YEAR, 1)
+                        calendar.timeInMillis
+                    } else {
+                        calendar.timeInMillis
+                    }
                 }
             } catch (e: Exception) {
                 // Continue trying with other patterns
+                Log.e("TimeParsing", "Failed to parse time with pattern $pattern: ${e.message}")
             }
         }
 
@@ -284,6 +345,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     val task = data.getValue(Task::class.java)
                     task?.let { taskList.add(it) }
                 }
+                sortTasksByTiming()
                 updateTaskListView()
             }
 
@@ -303,6 +365,16 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             textToSpeech.language = Locale.getDefault()
         }
     }
+
+    private fun sortTasksByTiming() {
+        // Sort the taskList based on the parsed time from the timing string
+        taskList.sortWith { t1, t2 ->
+            val time1 = parseTime(t1.timing ?: "")
+            val time2 = parseTime(t2.timing ?: "")
+            time1.compareTo(time2)
+        }
+    }
+
 
     override fun onDestroy() {
         textToSpeech.stop()

@@ -8,7 +8,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 
 
-class TaskAdapter(context: Context, private val tasks: List<Task>) : ArrayAdapter<Task>(context, 0, tasks) {
+class TaskAdapter(context: Context, private var tasks: List<Task>) : ArrayAdapter<Task>(context, 0, tasks) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.list_item_task_card, parent, false)
         val task = tasks[position]
@@ -21,4 +21,7 @@ class TaskAdapter(context: Context, private val tasks: List<Task>) : ArrayAdapte
 
         return view
     }
+
+
 }
+

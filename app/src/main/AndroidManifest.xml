@@ -72,6 +72,8 @@
             android:name=".SpeechToTextActivity"
             android:exported="true"/>
 
+        <activity android:name=".HistoryActivity"
+            android:exported="true"/>
 
         <meta-data
             android:name="com.google.android.gms.default_web_client_id"

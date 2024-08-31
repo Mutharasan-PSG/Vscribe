@@ -8,7 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 
 class NotificationReceiver : BroadcastReceiver() {
 
@@ -49,5 +54,35 @@ class NotificationReceiver : BroadcastReceiver() {
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(System.currentTimeMillis().toInt(), notificationBuilder.build())
+
+        // Move the task to history after the notification is sent
+        moveTaskToHistory(context, taskName)
+    }
+
+    private fun moveTaskToHistory(context: Context, taskName: String) {
+        val database: DatabaseReference = FirebaseDatabase.getInstance().reference
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        // Reference to the user's tasks
+        val taskRef = database.child("Voice_ToDo").child(userId)
+
+        // Find the task by name and move it to the history
+        taskRef.orderByChild("taskName").equalTo(taskName).get().addOnSuccessListener { snapshot ->
+            for (data in snapshot.children) {
+                val task = data.getValue(Task::class.java)
+                if (task != null) {
+                    // Save the task to the history node
+                    database.child("Task_History").child(userId).push().setValue(task)
+                    // Remove the task from the active list
+                    data.ref.removeValue()
+                }
+            }
+        }.addOnFailureListener { error ->
+            // Log the error
+            Log.e("NotificationReceiver", "Failed to move task to history: ${error.message}")
+
+            // You can also show a toast message to the user if needed
+            Toast.makeText(context, "Failed to archive task. Please try again.", Toast.LENGTH_SHORT).show()
+        }
     }
 }

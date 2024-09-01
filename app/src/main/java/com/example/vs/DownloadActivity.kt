@@ -122,29 +122,35 @@ class DownloadActivity : AppCompatActivity() {
     }
 
     private fun handleSpeechResult(recognizedText: String) {
-        when {
-            recognizedText.contains("Home page", ignoreCase = true) -> {
-                startActivity(Intent(this, HomeActivity::class.java))
-            }
+        val pageMappings = mapOf(
+            "Home page" to HomeActivity::class.java,
+            "Speech To Text" to SpeechToTextActivity::class.java,
+            "Voice Calculator" to VoiceCalculatorBottomSheet::class.java,
+            "Voice To Do List" to VoiceToDoListActivity::class.java,
+            "Profile" to ProfileActivity::class.java,
+            "History of task page" to HistoryActivity::class.java,
+            "Go to Home page" to HomeActivity::class.java,
+            "Go to Speech To Text page" to SpeechToTextActivity::class.java,
+            "Go to Voice Calculator page" to VoiceCalculatorBottomSheet::class.java,
+            "Go to Downloads page" to DownloadActivity::class.java,
+            "Go to History of task page" to HistoryActivity::class.java,
+            "Go to Voice to do list page" to VoiceToDoListActivity::class.java,
+            "Go to Profile page" to ProfileActivity::class.java
+        )
 
-            recognizedText.contains("Speech To Text", ignoreCase = true) -> {
-                startActivity(Intent(this, SpeechToTextActivity::class.java))
-            }
-
-            recognizedText.contains("Voice Calculator", ignoreCase = true) -> {
+        pageMappings.entries.find { recognizedText.contains(it.key, ignoreCase = true) }?.let { entry ->
+            val clazz = entry.value
+            if (clazz == VoiceCalculatorBottomSheet::class.java) {
+                // Show bottom sheet if the action is to display the VoiceCalculatorBottomSheet
                 val bottomSheet = VoiceCalculatorBottomSheet()
                 bottomSheet.show(supportFragmentManager, bottomSheet.tag)
-            }
-
-            recognizedText.contains("Voice To Do List", ignoreCase = true) -> {
-                startActivity(Intent(this, VoiceToDoListActivity::class.java))
-            }
-
-            recognizedText.contains("Profile", ignoreCase = true) -> {
-                startActivity(Intent(this, ProfileActivity::class.java))
+            } else {
+                // Start activity for other cases
+                startActivity(Intent(this, clazz))
             }
         }
     }
+
 
     private fun loadFilesFromFirebase() {
         val sdf = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())

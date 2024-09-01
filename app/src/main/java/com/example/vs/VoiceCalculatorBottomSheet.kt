@@ -281,6 +281,44 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 startActivity(Intent(requireContext(), ProfileActivity::class.java))
                 true
             }
+            input.contains("History of task", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), HistoryActivity::class.java))
+                true
+            }
+
+            input.contains("Go to home page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), HomeActivity::class.java))
+                true
+            }
+            input.contains("Go to speech to text page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), SpeechToTextActivity::class.java))
+                true
+            }
+            input.contains("Go to voice calculator page", ignoreCase = true) -> {
+                // Prevent multiple instances of the same bottom sheet
+                if (parentFragmentManager.findFragmentByTag("VoiceCalculatorBottomSheet") == null) {
+                    val bottomSheet = VoiceCalculatorBottomSheet()
+                    bottomSheet.show(parentFragmentManager, bottomSheet.tag)
+                }
+                true
+            }
+            input.contains("Go to voice to do list page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), VoiceToDoListActivity::class.java))
+                true
+            }
+            input.contains("Go to History of task page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), HistoryActivity::class.java))
+                true
+            }
+            input.contains("Go to Downloads page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), DownloadActivity::class.java))
+                true
+            }
+            input.contains("Go to Profile page", ignoreCase = true) -> {
+                startActivity(Intent(requireContext(), ProfileActivity::class.java))
+                true
+            }
+
             else -> false
         }
     }

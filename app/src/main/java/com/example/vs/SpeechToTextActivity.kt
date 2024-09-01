@@ -215,6 +215,34 @@ class SpeechToTextActivity : AppCompatActivity() {
             spokenText.startsWith("Downloads", ignoreCase = true) -> {
                 startActivity(Intent(this, DownloadActivity::class.java))
             }
+            spokenText.contains("History of task", ignoreCase = true) -> {
+                startActivity(Intent(this, HistoryActivity::class.java))
+                true
+            }
+            spokenText.contains("Go to History of task page", ignoreCase = true) -> {
+                startActivity(Intent(this, HistoryActivity::class.java))
+                true
+            }
+
+            spokenText.startsWith("Go to Home page", ignoreCase = true) -> {
+                startActivity(Intent(this, HomeActivity::class.java))
+            }
+            spokenText.startsWith("Go to Speech To Text page", ignoreCase = true) -> {
+                startActivity(Intent(this, SpeechToTextActivity::class.java))
+            }
+            spokenText.startsWith("Go to Voice Calculator page", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+            }
+            spokenText.startsWith("Go to Voice To Do List page", ignoreCase = true) -> {
+                startActivity(Intent(this, VoiceToDoListActivity::class.java))
+            }
+            spokenText.startsWith("Go to Profile page", ignoreCase = true) -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+            }
+            spokenText.startsWith("Go to Downloads page", ignoreCase = true) -> {
+                startActivity(Intent(this, DownloadActivity::class.java))
+            }
         }
     }
 

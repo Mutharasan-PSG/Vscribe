@@ -1,3 +1,4 @@
+
 package com.example.vs
 
 import android.annotation.SuppressLint
@@ -14,8 +15,10 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ListView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -37,10 +40,12 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var userId: String
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var speechRecognizer: SpeechRecognizer
-
+    private var isModifyingTask = false
+    private var taskToModify: String? = null
     private lateinit var historyButton: ImageButton
     private var taskName: String? = null
     private var isWaitingForTaskTime = false
+    private lateinit var removingTasksMessage: TextView
 
     private var taskInputTimeoutHandler: Handler? = null
 
@@ -57,7 +62,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Initialize UI components
         listViewTasks = findViewById(R.id.list_view_tasks)
         speechButton = findViewById(R.id.btn_speech)
-
+        removingTasksMessage = findViewById(R.id.tv_removing_tasks)
         // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
 
@@ -102,6 +107,9 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
                     val input = matches[0]
+
+                    handleSpeechResult(input)
+
                     if (isWaitingForTaskTime) {
                         handleTaskTimeInput(input)
                     } else {
@@ -128,8 +136,51 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         loadTasksFromDatabase()
     }
 
+
+
+
+    private fun handleSpeechResult(recognizedText: String) {
+        val pageMappings = mapOf(
+            "Home page" to HomeActivity::class.java,
+            "Speech To Text" to SpeechToTextActivity::class.java,
+            "Voice Calculator" to VoiceCalculatorBottomSheet::class.java,
+            "Voice To Do List" to VoiceToDoListActivity::class.java,
+            "Profile" to ProfileActivity::class.java,
+            "History of task page" to HistoryActivity::class.java,
+            "Go to Home page" to HomeActivity::class.java,
+            "Go to Speech To Text page" to SpeechToTextActivity::class.java,
+            "Go to Voice Calculator page" to VoiceCalculatorBottomSheet::class.java,
+            "Go to Downloads page" to DownloadActivity::class.java,
+            "Go to History of task page" to HistoryActivity::class.java,
+            "Go to Voice to do list page" to VoiceToDoListActivity::class.java,
+            "Go to Profile page" to ProfileActivity::class.java
+        )
+
+        pageMappings.entries.find { recognizedText.contains(it.key, ignoreCase = true) }?.let { entry ->
+            val clazz = entry.value
+            if (clazz == VoiceCalculatorBottomSheet::class.java) {
+                // Show bottom sheet if the action is to display the VoiceCalculatorBottomSheet
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+            } else {
+                // Start activity for other cases
+                startActivity(Intent(this, clazz))
+            }
+        }
+    }
+
+
+
     private fun startListeningForTaskName() {
         textToSpeech.speak("Please say the task name.", TextToSpeech.QUEUE_FLUSH, null, null)
+        isWaitingForTaskTime = false
+        startListening()
+        startTaskInputTimeout()
+    }
+
+
+    private fun startListeningForNewTaskName() {
+        textToSpeech.speak("Please say the new task name.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = false
         startListening()
         startTaskInputTimeout()
@@ -161,26 +212,11 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 // Stop listening and show timeout message
                 speechRecognizer.stopListening()
                 textToSpeech.speak("No task time provided. Operation terminated.", TextToSpeech.QUEUE_FLUSH, null, null)
-            } else {
-                // Stop listening and show timeout message
-                speechRecognizer.stopListening()
-                textToSpeech.speak("No task name provided. Operation terminated.", TextToSpeech.QUEUE_FLUSH, null, null)
             }
             resetTaskInput()
-        }, 10000) // 10 seconds timeout
+        }, 8000) // 8 seconds timeout
     }
 
-
-
-    private fun handleTaskNameInput(input: String) {
-        taskName = input.trim()
-        taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task name
-        if (taskName.isNullOrEmpty()) {
-            textToSpeech.speak("Task name is invalid. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
-        } else {
-            startListeningForTaskTime()
-        }
-    }
 
     private fun handleTaskTimeInput(input: String) {
         taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task time
@@ -188,11 +224,130 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (timing == null) {
             textToSpeech.speak("Task time is invalid or not provided. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
         } else {
-            saveTaskToDatabase(taskName!!, timing)
-            scheduleNotification(taskName!!, timing)
-            textToSpeech.speak("Task added: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
+            if (isModifyingTask) {
+                updateTaskInDatabase(taskToModify!!, taskName!!, timing)
+                textToSpeech.speak("Task modified: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
+                isModifyingTask = false
+            } else {
+                saveTaskToDatabase(taskName!!, timing)
+                scheduleNotification(taskName!!, timing)
+                textToSpeech.speak("Task added: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
+            }
+            resetTaskInput()
+            taskInputTimeoutHandler?.removeCallbacksAndMessages(null)
         }
-        resetTaskInput()
+    }
+
+
+    private fun handleTaskNameInput(input: String) {
+        val trimmedInput = input.trim().toLowerCase(Locale.getDefault())
+        if (trimmedInput.startsWith("remove all task")) {
+            removeAllTasks()
+        } else if (trimmedInput.startsWith("remove ")) {
+            val taskToRemove = trimmedInput.removePrefix("remove ").trim()
+            removeTaskFromList(taskToRemove)
+        } else if (trimmedInput.startsWith("modify ")) {
+            val taskToModify = trimmedInput.removePrefix("modify ").trim()
+            taskToModify(taskToModify) // Call method to handle modifying task
+        } else {
+            taskName = input.trim()
+            taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task name
+            if (taskName.isNullOrEmpty()) {
+                textToSpeech.speak("Task name is invalid. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
+
+            } else if (isModifyingTask) {
+                startListeningForTaskTime()
+            } else {
+                startListeningForTaskTime()
+            }
+        }
+    }
+
+    private fun taskToModify(taskToModify: String) {
+        isModifyingTask = true
+        this.taskToModify = taskToModify
+        startListeningForNewTaskName()
+    }
+
+    private fun updateTaskInDatabase(oldTaskName: String, newTaskName: String, newTiming: String) {
+        database.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var taskFound = false
+                for (data in snapshot.children) {
+                    val task = data.getValue(Task::class.java)
+                    if (task?.taskName?.trim()?.toLowerCase(Locale.getDefault()) == oldTaskName) {
+                        val updatedTask = Task(newTaskName, newTiming, task.timestamp)
+                        data.ref.setValue(updatedTask)
+                        taskFound = true
+                    }
+                }
+                if (taskFound) {
+                    loadTasksFromDatabase() // Reload tasks to update UI
+                } else {
+                    textToSpeech.speak("No such task found to modify.", TextToSpeech.QUEUE_FLUSH, null, null)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@VoiceToDoListActivity, "Failed to modify task", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
+    private fun showRemovingTasksMessage(show: Boolean) {
+        removingTasksMessage.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
+
+    private fun removeAllTasks() {
+        showRemovingTasksMessage(true)
+        database.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    for (data in snapshot.children) {
+                        data.ref.removeValue()
+                    }
+                    textToSpeech.speak("All tasks have been removed.", TextToSpeech.QUEUE_FLUSH, null, null)
+                    loadTasksFromDatabase() // Reload tasks to update UI
+                } else {
+                    textToSpeech.speak("No tasks found to remove.", TextToSpeech.QUEUE_FLUSH, null, null)
+                }
+                showRemovingTasksMessage(false)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@VoiceToDoListActivity, "Failed to remove tasks", Toast.LENGTH_SHORT).show()
+                showRemovingTasksMessage(false)
+            }
+        })
+    }
+
+    private fun removeTaskFromList(taskName: String) {
+        showRemovingTasksMessage(true)
+        database.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                var taskFound = false
+                for (data in snapshot.children) {
+                    val task = data.getValue(Task::class.java)
+                    if (task?.taskName?.trim()?.toLowerCase(Locale.getDefault()) == taskName) {
+                        data.ref.removeValue()
+                        taskFound = true
+                    }
+                }
+                if (taskFound) {
+                    textToSpeech.speak("Task removed: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
+                    loadTasksFromDatabase() // Reload tasks to update UI
+                } else {
+                    textToSpeech.speak("No such task found.", TextToSpeech.QUEUE_FLUSH, null, null)
+                }
+                showRemovingTasksMessage(false)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(this@VoiceToDoListActivity, "Failed to remove task", Toast.LENGTH_SHORT).show()
+                showRemovingTasksMessage(false)
+            }
+        })
     }
 
     private fun resetTaskInput() {
@@ -336,7 +491,6 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         val task = Task(taskName, timing, timeStamp)
         database.push().setValue(task)
     }
-
     private fun loadTasksFromDatabase() {
         database.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -356,8 +510,15 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun updateTaskListView() {
-        val adapter = TaskAdapter(this, taskList)
-        listViewTasks.adapter = adapter
+        if (taskList.isEmpty()) {
+            // Show a message when there are no tasks
+            listViewTasks.adapter = null
+            listViewTasks.emptyView = findViewById(R.id.empty_view) // Assuming you have a TextView with ID empty_view in your layout
+        } else {
+            val adapter = TaskAdapter(this, taskList)
+            listViewTasks.adapter = adapter
+            listViewTasks.emptyView = null
+        }
     }
 
     override fun onInit(status: Int) {

@@ -9,8 +9,10 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
+import android.view.View
 import android.widget.ImageButton
 import android.widget.ListView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -34,6 +36,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private val historyList = mutableListOf<Task>()
     private var isWaitingForConfirmation = false
     private var taskInputTimeoutHandler: Handler? = null
+    private lateinit var emptyMessageTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +50,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         listViewHistory = findViewById(R.id.list_view_history)
         btnDeleteHistory = findViewById(R.id.btn_delete_history)
         btnSpeech = findViewById(R.id.btn_speech)
+        emptyMessageTextView = findViewById(R.id.text_view_empty_message)
 
         // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
@@ -55,7 +59,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-               btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequency)
             }
 
             override fun onBeginningOfSpeech() {
@@ -83,8 +87,13 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
                     val input = matches[0]
+
+                    handleSpeechResult(input)
+
                     if (isWaitingForConfirmation) {
                         handleConfirmationInput(input)
+                    } else if (input.contains("clear history", ignoreCase = true)) {
+                        startListeningForConfirmation()
                     }
                 }
                 btnSpeech.setImageResource(R.drawable.mic)
@@ -100,11 +109,10 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             showDeleteConfirmationDialog()
         }
 
-
-        // Set up delete button click listener
+        // Set up mic button click listener
         btnSpeech.setOnClickListener {
             if (NetworkUtil.isNetworkAvailable(this)) {
-                startListeningForConfirmation()
+                startListening()
             } else {
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
             }
@@ -113,6 +121,39 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         // Load tasks from Firebase
         loadHistoryFromDatabase()
     }
+
+
+    private fun handleSpeechResult(recognizedText: String) {
+        val pageMappings = mapOf(
+            "Home page" to HomeActivity::class.java,
+            "Speech To Text" to SpeechToTextActivity::class.java,
+            "Voice Calculator" to VoiceCalculatorBottomSheet::class.java,
+            "Voice To Do List" to VoiceToDoListActivity::class.java,
+            "Profile" to ProfileActivity::class.java,
+            "History of task page" to HistoryActivity::class.java,
+            "Go to Home page" to HomeActivity::class.java,
+            "Go to Speech To Text page" to SpeechToTextActivity::class.java,
+            "Go to Voice Calculator page" to VoiceCalculatorBottomSheet::class.java,
+            "Go to Downloads page" to DownloadActivity::class.java,
+            "Go to History of task page" to HistoryActivity::class.java,
+            "Go to Voice to do list page" to VoiceToDoListActivity::class.java,
+            "Go to Profile page" to ProfileActivity::class.java
+        )
+
+        pageMappings.entries.find { recognizedText.contains(it.key, ignoreCase = true) }?.let { entry ->
+            val clazz = entry.value
+            if (clazz == VoiceCalculatorBottomSheet::class.java) {
+                // Show bottom sheet if the action is to display the VoiceCalculatorBottomSheet
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+            } else {
+                // Start activity for other cases
+                startActivity(Intent(this, clazz))
+            }
+        }
+    }
+
+
 
     private fun startListeningForConfirmation() {
         textToSpeech.speak("Do you want to clear all history of tasks? Please say 'confirm' to proceed or 'cancel' to abort.", TextToSpeech.QUEUE_FLUSH, null, null)
@@ -129,7 +170,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
         }
         speechRecognizer.startListening(intent)
-        Toast.makeText(this, "Listening for your confirmation", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Listening for your command", Toast.LENGTH_SHORT).show()
     }
 
     private fun startTaskInputTimeout() {
@@ -182,8 +223,15 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun updateHistoryListView() {
         val adapter = HistoryAdapter(this, historyList)
         listViewHistory.adapter = adapter
-    }
 
+        if (historyList.isEmpty()) {
+            emptyMessageTextView.visibility = View.VISIBLE
+            listViewHistory.visibility = View.GONE
+        } else {
+            emptyMessageTextView.visibility = View.GONE
+            listViewHistory.visibility = View.VISIBLE
+        }
+    }
 
     private fun showDeleteConfirmationDialog() {
         AlertDialog.Builder(this)
@@ -195,6 +243,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             .setNegativeButton("Cancel", null)
             .show()
     }
+
     private fun clearHistory() {
         database.removeValue()
             .addOnCompleteListener { task ->

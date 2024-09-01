@@ -29,6 +29,7 @@
         android:src="@drawable/history"
         android:scaleType="fitXY"/>
 
+
     <ListView
         android:id="@+id/list_view_tasks"
         android:layout_width="match_parent"
@@ -39,6 +40,26 @@
         android:divider="@android:color/transparent"
         android:dividerHeight="10dp"/>
 
+    <!-- Add this to your activity_voice_to_do_list.xml layout file -->
+    <TextView
+        android:id="@+id/empty_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Task will appear here"
+        android:layout_gravity="center"
+        android:layout_centerInParent="true"
+        android:textSize="18dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tv_removing_tasks"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Removing tasks.e.."
+        android:visibility="gone"
+        android:textColor="@android:color/holo_red_dark"
+        android:textSize="18sp"
+        android:layout_gravity="center"/>
 
     <ImageButton
         android:id="@+id/btn_speech"

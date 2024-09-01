@@ -39,6 +39,15 @@
         android:layout_below="@id/history_task"
         android:layout_above="@id/btn_speech" />
 
+    <TextView
+        android:id="@+id/text_view_empty_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="History of tasks will appear here"
+        android:textSize="18sp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"/>
+
     <!-- Speech Button -->
     <ImageButton
         android:id="@+id/btn_speech"

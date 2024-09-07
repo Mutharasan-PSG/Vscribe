@@ -3,13 +3,16 @@ package com.example.vs
 
 import android.annotation.SuppressLint
 import android.app.AlarmManager
+import android.app.AlertDialog
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.os.Looper
+import android.provider.Settings
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -21,6 +24,8 @@ import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -50,6 +55,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private var taskInputTimeoutHandler: Handler? = null
 
     private val taskList = mutableListOf<Task>()
+    private val REQUEST_NOTIFICATION_PERMISSION = 101
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,7 +71,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         removingTasksMessage = findViewById(R.id.tv_removing_tasks)
         // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
-
+        checkNotificationPermission()
 
         val btnHistory = findViewById<ImageButton>(R.id.btn_history)
         btnHistory.setOnClickListener {
@@ -95,7 +101,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 // Log the error for debugging
                 Log.e("SpeechRecognizer", "Error: $error")
                 // Handle specific errors and ensure the recognizer is restarted if needed
-                Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech: $error", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@VoiceToDoListActivity, "Error recognizing speech", Toast.LENGTH_SHORT).show()
                 if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
                     // You can restart the recognizer here if needed
                     startListening()
@@ -137,6 +143,54 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
 
+    private fun checkNotificationPermission() {
+        if (!isNotificationEnabled()) {
+            showNotificationPermissionPrompt()
+        }
+    }
+
+    private fun isNotificationEnabled(): Boolean {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.areNotificationsEnabled()
+        } else {
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) ==  PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun showNotificationPermissionPrompt() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Enable Notifications")
+            .setMessage("Notifications are disabled. To receive reminders for your tasks, please enable notifications.")
+            .setPositiveButton("Go to Settings") { _, _ ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    startActivity(intent)
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                        REQUEST_NOTIFICATION_PERMISSION
+                    )
+                }
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                Toast.makeText(this, "Notifications won't be sent for scheduled tasks if not enabled.", Toast.LENGTH_LONG).show()
+            }
+            .show()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_NOTIFICATION_PERMISSION) {
+            if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                Toast.makeText(this, "Notification permission granted.", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Notifications won't be sent for scheduled tasks if not enabled.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
 
     private fun handleSpeechResult(recognizedText: String) {
@@ -175,7 +229,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech.speak("Please say the task name.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = false
         startListening()
-        startTaskInputTimeout()
+       // startTaskInputTimeout()
     }
 
 
@@ -183,14 +237,14 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech.speak("Please say the new task name.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = false
         startListening()
-        startTaskInputTimeout()
+      //  startTaskInputTimeout()
     }
 
     private fun startListeningForTaskTime() {
         textToSpeech.speak("Please say the task time.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = true
         startListening()
-        startTaskInputTimeout()
+       // startTaskInputTimeout()
     }
 
     private fun startListening() {
@@ -204,7 +258,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
 
-    private fun startTaskInputTimeout() {
+ /*   private fun startTaskInputTimeout() {
         taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Remove any previous callbacks
         taskInputTimeoutHandler = Handler(Looper.getMainLooper())
         taskInputTimeoutHandler?.postDelayed({
@@ -216,10 +270,10 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             resetTaskInput()
         }, 8000) // 8 seconds timeout
     }
-
+*/
 
     private fun handleTaskTimeInput(input: String) {
-        taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task time
+      //  taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task time
         val timing = parseTaskTime(input.trim())
         if (timing == null) {
             textToSpeech.speak("Task time is invalid or not provided. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
@@ -234,7 +288,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 textToSpeech.speak("Task added: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
             }
             resetTaskInput()
-            taskInputTimeoutHandler?.removeCallbacksAndMessages(null)
+          //  taskInputTimeoutHandler?.removeCallbacksAndMessages(null)
         }
     }
 
@@ -251,13 +305,13 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             taskToModify(taskToModify) // Call method to handle modifying task
         } else {
             taskName = input.trim()
-            taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task name
+         //   taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task name
             if (taskName.isNullOrEmpty()) {
                 textToSpeech.speak("Task name is invalid. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
 
-            } else if (isModifyingTask) {
+            }/* else if (isModifyingTask) {
                 startListeningForTaskTime()
-            } else {
+            }*/ else {
                 startListeningForTaskTime()
             }
         }

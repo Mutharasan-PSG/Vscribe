@@ -19,9 +19,13 @@
         <item name="buttonStyle">@style/CustomButton</item>
     </style>
 
+
     <!-- Custom button style with Windows logo color -->
     <style name="CustomButton" parent="Widget.MaterialComponents.Button">
         <item name="android:background">@drawable/gradient_button</item>
         <item name="android:textColor">@android:color/black</item>
     </style>
+
 </resources>
+
+

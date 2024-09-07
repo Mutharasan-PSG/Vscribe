@@ -76,7 +76,7 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
             override fun onError(error: Int) {
                 Log.e("SpeechRecognizer", "Error: $error")
-                Toast.makeText(this@HistoryActivity, "Error recognizing speech: $error", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@HistoryActivity, "Error recognizing speech", Toast.LENGTH_SHORT).show()
                 if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
                     startListening()
                 }

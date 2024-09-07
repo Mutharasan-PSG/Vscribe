@@ -34,6 +34,7 @@
 
         <!-- White color for status and action bar -->
         <color name="colorWhite">#FFFFFF</color>
+    <color name="textColor">#FFFFFF</color>
     </resources>
 
 

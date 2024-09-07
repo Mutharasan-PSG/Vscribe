@@ -20,7 +20,10 @@ import android.widget.Toast
 import android.widget.ViewFlipper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import java.util.Locale
 
@@ -35,6 +38,7 @@ class HomeActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_MICROPHONE_PERMISSION = 1
+        private const val REQUEST_NOTIFICATION_PERMISSION = 2
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +54,11 @@ class HomeActivity : AppCompatActivity() {
         itemVoiceToDoList = findViewById(R.id.item_voice_to_do_list)
         btnSpeech = findViewById(R.id.btn_speech)
 
+        // Check for notification permission
+        if (!areNotificationsEnabled()) {
+            requestNotificationPermission()
+        }
+
         // Check for microphone permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_MICROPHONE_PERMISSION)
@@ -59,17 +68,12 @@ class HomeActivity : AppCompatActivity() {
 
         bottomNavigationView.setOnNavigationItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home -> {
-                    // Handle Home navigation
-                    true
-                }
+                R.id.nav_home -> true
                 R.id.nav_download -> {
-                    // Navigate to DownloadActivity
                     startActivity(Intent(this, DownloadActivity::class.java))
                     true
                 }
                 R.id.nav_profile -> {
-                    // Navigate to ProfileActivity
                     startActivity(Intent(this, ProfileActivity::class.java))
                     true
                 }
@@ -83,7 +87,6 @@ class HomeActivity : AppCompatActivity() {
         }
 
         itemVoiceCalculator.setOnClickListener {
-            // Show Voice Calculator Bottom Sheet
             val bottomSheet = VoiceCalculatorBottomSheet()
             bottomSheet.show(supportFragmentManager, bottomSheet.tag)
         }
@@ -92,10 +95,28 @@ class HomeActivity : AppCompatActivity() {
             startActivity(Intent(this, VoiceToDoListActivity::class.java))
         }
 
-        // Set click listener for speech button
         btnSpeech.setOnClickListener {
             startSpeechRecognition()
             Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun areNotificationsEnabled(): Boolean {
+        return NotificationManagerCompat.from(this).areNotificationsEnabled()
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_NOTIFICATION_PERMISSION
+            )
+        } else {
+            // For earlier versions, we need to direct the user to the app settings
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            startActivity(intent)
         }
     }
 
@@ -105,12 +126,20 @@ class HomeActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                Glide.with(this@HomeActivity)
+                    .asGif()
+                    .load(R.drawable.voice_frequencyy) // Replace with your GIF
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .into(btnSpeech)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                Glide.with(this@HomeActivity)
+                    .asGif()
+                    .load(R.drawable.voice_frequencyy) // Replace with your GIF
+                    .transition(DrawableTransitionOptions.withCrossFade())
+                    .into(btnSpeech)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -139,40 +168,6 @@ class HomeActivity : AppCompatActivity() {
 
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
-    }
-
-    private fun startSpeechRecognition() {
-        if (!isInternetAvailable()) {
-            Toast.makeText(this, "Internet connection is required for speech recognition", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
-        }
-        speechRecognizer.startListening(intent)
-
-    }
-
-    private fun isInternetAvailable(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
-        }
     }
 
 
@@ -205,6 +200,41 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    private fun startSpeechRecognition() {
+        if (!isInternetAvailable()) {
+            Toast.makeText(this, "Internet connection is required for speech recognition", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+        }
+        speechRecognizer.startListening(intent)
+    }
+
+    private fun isInternetAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return when {
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo ?: return false
+            @Suppress("DEPRECATION")
+            return networkInfo.isConnected
+        }
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
@@ -213,19 +243,29 @@ class HomeActivity : AppCompatActivity() {
                     initializeSpeechRecognizer()
                 } else {
                     Toast.makeText(this, "Microphone permission is required for speech recognition", Toast.LENGTH_LONG).show()
-                    // Optionally, guide the user to the app settings
                     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                        data =
-                            Uri.fromParts("package", packageName, null)
+                        data = Uri.fromParts("package", packageName, null)
                     }
                     startActivity(intent)
                 }
             }
+            REQUEST_NOTIFICATION_PERMISSION -> {
+                if (!areNotificationsEnabled()) {
+                    Toast.makeText(this, "Notifications won't be sent if not enabled", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        bottomNavigationView.selectedItemId = R.id.nav_home
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
         speechRecognizer.destroy()
     }
 }
+

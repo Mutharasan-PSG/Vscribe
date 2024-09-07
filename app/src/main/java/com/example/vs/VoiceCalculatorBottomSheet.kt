@@ -102,10 +102,9 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (!matches.isNullOrEmpty()) {
                     val input = matches[0]
-                    inputTextView.text = input
                     if (!handleNavigationCommands(input)) {
+                        inputTextView.text = input // Display only if it's not a navigation command
                         handleInput(input)
-
                     }
                 }
                 startButton.setImageResource(R.drawable.mic)
@@ -337,12 +336,16 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             Toast.makeText(requireContext(), "Initialization failed", Toast.LENGTH_SHORT).show()
         }
     }
-
     private fun saveHistory(input: String, result: String) {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("users").child(it.uid).child("Calculator_history")
-            val historyItem = mapOf("input" to input, "result" to result)
+            val userHistoryRef = database.child("Calculator_History").child(it.uid)
+            val timestamp = System.currentTimeMillis()
+            val historyItem = mapOf(
+                "input" to input,
+                "result" to result,
+                "timestamp" to timestamp
+            )
             userHistoryRef.push().setValue(historyItem)
         }
     }
@@ -350,18 +353,29 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private fun fetchHistory() {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("users").child(it.uid).child("Calculator_history")
+            val userHistoryRef = database.child("Calculator_History").child(it.uid)
             userHistoryRef.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     historyList.clear()
+                    val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000 // 3 days in milliseconds
+                    val currentTime = System.currentTimeMillis()
+
                     if (snapshot.exists()) {
+                        val tempList = mutableListOf<String>() // Temporary list to hold history items
                         for (historySnapshot in snapshot.children) {
                             val input = historySnapshot.child("input").getValue(String::class.java)
                             val result = historySnapshot.child("result").getValue(String::class.java)
-                            if (input != null && result != null) {
-                                historyList.add("Input: $input | Result: $result")
+                            val timestamp = historySnapshot.child("timestamp").getValue(Long::class.java)
+
+                            if (input != null && result != null && timestamp != null) {
+                                // Check if the history is within the last 3 days
+                                if (currentTime - timestamp <= threeDaysInMillis) {
+                                    tempList.add("Input: $input | Result: $result")
+                                }
                             }
                         }
+                        // Reverse the tempList to ensure the most recent items are first
+                        historyList.addAll(tempList.reversed())
                     }
                     historyAdapter.notifyDataSetChanged()
                     if (historyList.isEmpty()) {
@@ -381,6 +395,8 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             })
         }
     }
+
+
 
     override fun onDestroy() {
         super.onDestroy()

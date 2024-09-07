@@ -131,16 +131,24 @@ class SpeechToTextActivity : AppCompatActivity() {
                 if (matches != null) {
                     val spokenText = matches[0]
                     val formattedText = handleFormattingCommands(spokenText)
+
                     if (isFindReplaceCommand(formattedText)) {
                         handleFindReplace(formattedText)
                     } else {
-                        textViewTranscribed.append(formattedText + " ")
+                        // Append text without adding extra spaces
+                        val currentText = textViewTranscribed.text.toString()
+                        if (currentText.isEmpty() || currentText.endsWith("\n")) {
+                            textViewTranscribed.append(formattedText) // No space before if new line
+                        } else {
+                            textViewTranscribed.append(" $formattedText") // Add space before if needed
+                        }
                     }
                     handleNavigationCommands(formattedText)
                 }
                 btnSpeech.setImageResource(R.drawable.mic)
                 inactivityHandler.removeCallbacks(inactivityRunnable) // Remove handler on success
             }
+
 
             override fun onPartialResults(partialResults: Bundle?) {
                 resetInactivityTimeout()
@@ -176,44 +184,54 @@ class SpeechToTextActivity : AppCompatActivity() {
     }
 
     private fun handleFormattingCommands(spokenText: String): String {
-        var formattedText = spokenText
+        var formattedText = spokenText.trim()  // Remove any leading/trailing spaces
         formattedText = formattedText.replace("comma", ",")
-        formattedText = formattedText.replace("new line", "\n")
-        formattedText = formattedText.replace("next line", "\n")
         formattedText = formattedText.replace("period", ".")
-        formattedText = formattedText.replace("exclamation", "!")
+        formattedText = formattedText.replace("exclamatory", "!")
         formattedText = formattedText.replace("question mark", "?")
         formattedText = formattedText.replace("hyphen", "-")
         formattedText = formattedText.replace("underscore", "_")
         formattedText = formattedText.replace("under score", "_")
         formattedText = formattedText.replace("quotes", "\"")
-        formattedText = formattedText.replace("double quotes", "\"\" ")
+        formattedText = formattedText.replace("double quotes", "\"\"")
         formattedText = formattedText.replace("single quotes", "'")
-        // Add more replacements as needed
+
+        // Handling new line and next line without adding a space
+        formattedText = formattedText.replace("new line", "\n").replace("next line", "\n")
+
+        // Handling tab command to insert 5 spaces
+        formattedText = formattedText.replace("tab space", "     ")  // 5 character spaces
 
         return formattedText
     }
 
-    private fun handleNavigationCommands(spokenText: String) {
-        when {
+
+    private fun handleNavigationCommands(spokenText: String): Boolean {
+        return when {
             spokenText.startsWith("Home page", ignoreCase = true) -> {
                 startActivity(Intent(this, HomeActivity::class.java))
+                true
             }
             spokenText.startsWith("Speech To Text", ignoreCase = true) -> {
                 startActivity(Intent(this, SpeechToTextActivity::class.java))
+                true
             }
             spokenText.startsWith("Voice Calculator", ignoreCase = true) -> {
                 val bottomSheet = VoiceCalculatorBottomSheet()
                 bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+                true
             }
             spokenText.startsWith("Voice To Do List", ignoreCase = true) -> {
                 startActivity(Intent(this, VoiceToDoListActivity::class.java))
+                true
             }
             spokenText.startsWith("Profile", ignoreCase = true) -> {
                 startActivity(Intent(this, ProfileActivity::class.java))
+                true
             }
             spokenText.startsWith("Downloads", ignoreCase = true) -> {
                 startActivity(Intent(this, DownloadActivity::class.java))
+                true
             }
             spokenText.contains("History of task", ignoreCase = true) -> {
                 startActivity(Intent(this, HistoryActivity::class.java))
@@ -223,26 +241,32 @@ class SpeechToTextActivity : AppCompatActivity() {
                 startActivity(Intent(this, HistoryActivity::class.java))
                 true
             }
-
             spokenText.startsWith("Go to Home page", ignoreCase = true) -> {
                 startActivity(Intent(this, HomeActivity::class.java))
+                true
             }
             spokenText.startsWith("Go to Speech To Text page", ignoreCase = true) -> {
                 startActivity(Intent(this, SpeechToTextActivity::class.java))
+                true
             }
             spokenText.startsWith("Go to Voice Calculator page", ignoreCase = true) -> {
                 val bottomSheet = VoiceCalculatorBottomSheet()
                 bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+                true
             }
             spokenText.startsWith("Go to Voice To Do List page", ignoreCase = true) -> {
                 startActivity(Intent(this, VoiceToDoListActivity::class.java))
+                true
             }
             spokenText.startsWith("Go to Profile page", ignoreCase = true) -> {
                 startActivity(Intent(this, ProfileActivity::class.java))
+                true
             }
             spokenText.startsWith("Go to Downloads page", ignoreCase = true) -> {
                 startActivity(Intent(this, DownloadActivity::class.java))
+                true
             }
+            else -> false
         }
     }
 

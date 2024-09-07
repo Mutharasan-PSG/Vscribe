@@ -51,16 +51,6 @@
         android:textSize="18dp"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/tv_removing_tasks"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Removing tasks.e.."
-        android:visibility="gone"
-        android:textColor="@android:color/holo_red_dark"
-        android:textSize="18sp"
-        android:layout_gravity="center"/>
-
     <ImageButton
         android:id="@+id/btn_speech"
         android:layout_width="62dp"

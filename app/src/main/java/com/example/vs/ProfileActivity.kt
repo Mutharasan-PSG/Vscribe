@@ -18,6 +18,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Locale
 
 class ProfileActivity : AppCompatActivity() {
@@ -26,6 +27,7 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var speechRecognizer: SpeechRecognizer
     private lateinit var btnSpeech: ImageButton
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,6 +36,7 @@ class ProfileActivity : AppCompatActivity() {
         initializeUI()
         configureGoogleSignIn()
         setupSpeechRecognizer()
+        firestore = FirebaseFirestore.getInstance()
 
         val user = sessionManager.getUserDetails()
         user?.let {
@@ -70,12 +73,12 @@ class ProfileActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -129,7 +132,6 @@ class ProfileActivity : AppCompatActivity() {
         }
         speechRecognizer.startListening(intent)
     }
-
 
     private fun handleSpeechResult(recognizedText: String) {
         val pageMappings = mapOf(

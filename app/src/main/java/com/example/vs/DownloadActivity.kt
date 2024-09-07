@@ -18,11 +18,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Paragraph
@@ -36,7 +32,7 @@ class DownloadActivity : AppCompatActivity() {
     private lateinit var searchView: SearchView
     private lateinit var buttonRefresh: ImageButton
     private lateinit var spinnerFilter: Spinner
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
     private var fileList: MutableList<Map<String, String>> = mutableListOf()
     private var adapter: ArrayAdapter<String>? = null
     private var fileContentToSave: String = ""
@@ -54,16 +50,16 @@ class DownloadActivity : AppCompatActivity() {
         spinnerFilter = findViewById(R.id.spinner_filter)
         btnSpeech = findViewById(R.id.btn_speech)
         textNoFiles = findViewById(R.id.text_no_files)
-        // Initialize Firebase
-        database = FirebaseDatabase.getInstance().reference.child("Files")
+        // Initialize Firestore
+        firestore = FirebaseFirestore.getInstance()
 
         setupListView()
         setupSearchView()
         setupRefreshButton()
         setupFilterSpinner()
         setupSpeechRecognizer()
-    
-        loadFilesFromFirebase()
+
+        loadFilesFromFirestore()
     }
 
     private fun setupSpeechRecognizer() {
@@ -71,12 +67,12 @@ class DownloadActivity : AppCompatActivity() {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.d("SpeechRecognizer", "Ready for speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
                 Log.d("SpeechRecognizer", "Beginning of speech")
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -151,28 +147,33 @@ class DownloadActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun loadFilesFromFirebase() {
-        val sdf = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
-        val currentMonth = sdf.format(Date())
+    private fun loadFilesFromFirestore() {
+        val sdfMonth = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
+        val currentMonth = sdfMonth.format(Date())
         val currentUserId = SessionManager(this).getUserId() ?: "unknown"
 
-        database.child(currentMonth).orderByChild("userId").equalTo(currentUserId).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
+        val firestore = FirebaseFirestore.getInstance()
+
+        // Query the UserFiles subcollection for the current month
+        firestore.collection("Files")
+            .document(currentMonth)
+            .collection("UserFiles")
+            .whereEqualTo("userId", currentUserId)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
                 fileList.clear()
-                for (fileSnapshot in snapshot.children) {
-                    val fileData = fileSnapshot.value as? Map<String, String>
+                for (document in querySnapshot.documents) {
+                    val fileData = document.data as? Map<String, String>
                     fileData?.let { fileList.add(it) }
                 }
                 fileList.sortByDescending { it["timestamp"] }
                 updateListView()
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e("DownloadActivity", "Failed to load files", error.toException())
+            .addOnFailureListener { exception ->
+                Log.e("DownloadActivity", "Failed to load files", exception)
             }
-        })
     }
+
 
     private fun setupListView() {
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, fileList.map { stripExtension(it["fileName"] ?: "Unknown") })
@@ -194,7 +195,7 @@ class DownloadActivity : AppCompatActivity() {
         builder.setItems(fileTypes) { _, which ->
             val selectedFileType = fileTypes[which]
             val newFileName = when (selectedFileType) {
-             //   "PDF" -> fileName.replaceAfterLast('.', "pdf")
+                // "PDF" -> fileName.replaceAfterLast('.', "pdf")
                 "DOCX" -> fileName.replaceAfterLast('.', "docx")
                 else -> fileName.replaceAfterLast('.', "txt")
             }
@@ -290,11 +291,10 @@ class DownloadActivity : AppCompatActivity() {
 
     private fun setupRefreshButton() {
         buttonRefresh.setOnClickListener {
-            loadFilesFromFirebase()
+            loadFilesFromFirestore()
             Toast.makeText(this, "Refreshing and loading the files...", Toast.LENGTH_SHORT).show()
         }
     }
-
 
     private fun updateListView() {
         if (fileList.isEmpty()) {
@@ -308,7 +308,6 @@ class DownloadActivity : AppCompatActivity() {
             adapter?.notifyDataSetChanged()
         }
     }
-
 
     private fun setupFilterSpinner() {
         val filterOptions = arrayOf("A-Z", "Z-A")
@@ -324,17 +323,13 @@ class DownloadActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
+
     private fun applyFilter(filterOption: String) {
         val sortedFiles = when (filterOption) {
-           // "Date" -> fileList.sortedBy { it["fileDate"]?.toDate() ?: Date(0) }
-          //  "Month" -> fileList.sortedBy { it["fileMonth"] }
-         //   "Year" -> fileList.sortedBy { it["fileYear"] }
             "A-Z" -> fileList.sortedWith(compareBy { it["fileName"]?.let { name ->
-                // Convert to lowercase for case-insensitive comparison
                 name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
             } ?: "" })
             "Z-A" -> fileList.sortedWith(compareByDescending { it["fileName"]?.let { name ->
-                // Convert to lowercase for case-insensitive comparison
                 name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
             } ?: "" })
             "Numeric" -> fileList.sortedWith(compareBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE })
@@ -349,11 +344,9 @@ class DownloadActivity : AppCompatActivity() {
         return fileName.substringBeforeLast('.', fileName)
     }
 
-
     companion object {
         private const val CREATE_FILE_REQUEST_CODE = 1
     }
-
 
     fun String.toDate(): Date? {
         val format = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -364,5 +357,4 @@ class DownloadActivity : AppCompatActivity() {
             null
         }
     }
-    }
-
+}

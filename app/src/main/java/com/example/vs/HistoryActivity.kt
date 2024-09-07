@@ -17,17 +17,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import java.util.Locale
 
 class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var listViewHistory: ListView
-    private lateinit var database: DatabaseReference
+    private val firestore = FirebaseFirestore.getInstance()
     private lateinit var userId: String
     private lateinit var btnDeleteHistory: ImageButton
     private lateinit var btnSpeech: ImageButton
@@ -44,7 +41,6 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         // Initialize Firebase
         userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-        database = FirebaseDatabase.getInstance().reference.child("Task_History").child(userId)
 
         // Initialize UI components
         listViewHistory = findViewById(R.id.list_view_history)
@@ -59,11 +55,11 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
-                btnSpeech.setImageResource(R.drawable.voice_frequency)
+                btnSpeech.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -118,10 +114,9 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        // Load tasks from Firebase
-        loadHistoryFromDatabase()
+        // Load tasks from Firestore with real-time updates
+        loadHistoryFromFirestore()
     }
-
 
     private fun handleSpeechResult(recognizedText: String) {
         val pageMappings = mapOf(
@@ -152,8 +147,6 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
     }
-
-
 
     private fun startListeningForConfirmation() {
         textToSpeech.speak("Do you want to clear all history of tasks? Please say 'confirm' to proceed or 'cancel' to abort.", TextToSpeech.QUEUE_FLUSH, null, null)
@@ -202,22 +195,28 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         isWaitingForConfirmation = false
     }
 
-    private fun loadHistoryFromDatabase() {
-        database.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                historyList.clear()
-                for (data in snapshot.children) {
-                    val task = data.getValue(Task::class.java)
-                    task?.let { historyList.add(it) }
-                }
-                historyList.reverse() // Reverse the list to show the most recent task first
-                updateHistoryListView()
-            }
+    private fun loadHistoryFromFirestore() {
+        val historyRef = firestore.collection("Voice_ToDo")
+            .document("Task_History")
+            .collection(userId) // Use correct collection
 
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@HistoryActivity, "Failed to load history", Toast.LENGTH_SHORT).show()
+        historyRef.orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    Toast.makeText(this@HistoryActivity, "Failed to load history", Toast.LENGTH_SHORT).show()
+                    Log.e("HistoryActivity", "Error loading history: ${exception.message}")
+                    return@addSnapshotListener
+                }
+
+                snapshot?.let {
+                    historyList.clear()
+                    for (document in it.documents) {
+                        val task = document.toObject(Task::class.java)
+                        task?.let { historyList.add(it) }
+                    }
+                    updateHistoryListView()
+                }
             }
-        })
     }
 
     private fun updateHistoryListView() {
@@ -245,15 +244,30 @@ class HistoryActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun clearHistory() {
-        database.removeValue()
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show()
-                    historyList.clear()
-                    updateHistoryListView()
-                } else {
-                    Toast.makeText(this, "Failed to clear history", Toast.LENGTH_SHORT).show()
+        val historyRef = firestore.collection("Voice_ToDo")
+            .document("Task_History")
+            .collection(userId) // Use correct collection
+
+        historyRef.get()
+            .addOnSuccessListener { snapshot ->
+                val batch = firestore.batch()
+                for (document in snapshot.documents) {
+                    batch.delete(document.reference)
                 }
+                batch.commit().addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show()
+                        historyList.clear()
+                        updateHistoryListView()
+                    } else {
+                        Toast.makeText(this, "Failed to clear history", Toast.LENGTH_SHORT).show()
+                        Log.e("HistoryActivity", "Error clearing history: ${task.exception?.message}")
+                    }
+                }
+            }
+            .addOnFailureListener { error ->
+                Toast.makeText(this, "Failed to clear history", Toast.LENGTH_SHORT).show()
+                Log.e("HistoryActivity", "Error clearing history: ${error.message}")
             }
     }
 

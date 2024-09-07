@@ -22,18 +22,14 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyListener {
 
     private lateinit var sessionManager: SessionManager
     private lateinit var googleSignInClient: GoogleSignInClient
     private lateinit var signInResultLauncher: ActivityResultLauncher<Intent>
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
     private var pendingAccount: GoogleSignInAccount? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,8 +46,8 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
 
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        // Initialize Firebase Realtime Database
-        database = FirebaseDatabase.getInstance().reference
+        // Initialize Firestore
+        firestore = FirebaseFirestore.getInstance()
 
         // Initialize ActivityResultLauncher
         signInResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -104,7 +100,7 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
                         // Sign-in successful
                         val user = FirebaseAuth.getInstance().currentUser
                         if (user != null) {
-                            // Check if user already exists in the database
+                            // Check if user already exists in Firestore
                             checkIfUserExists(user.uid, user)
                         }
                     } else {
@@ -127,56 +123,52 @@ class SignUpActivity : AppCompatActivity(), PolicyBottomSheetFragment.PolicyList
 
     private fun checkIfUserExists(userId: String, user: FirebaseUser) {
         if (NetworkUtil.isNetworkAvailable(this)) {
-            database.child("users").child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        // User already exists
-                        showCustomToast("Already you have an account", 1400)
-                        // Redirect to HomeActivity
-                        sessionManager.setLoggedIn(true) // Update login status
-                        sessionManager.saveUserDetails(
-                            User(
-                                id = user.uid,
-                                name = user.displayName.toString(),
-                                email = user.email.toString(),
-                                photoUrl = user.photoUrl?.toString()
-                            )
-                        )
-                        startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
-                        finish()
-                    } else {
-                        // User does not exist, proceed with registration
-                        val userDetails = User(
-                            id = user.uid, // Assuming UID as ID
+            firestore.collection("users").document(userId).get().addOnSuccessListener { document ->
+                if (document.exists()) {
+                    // User already exists
+                    showCustomToast("Already you have an account", 1400)
+                    // Redirect to HomeActivity
+                    sessionManager.setLoggedIn(true) // Update login status
+                    sessionManager.saveUserDetails(
+                        User(
+                            id = user.uid,
                             name = user.displayName.toString(),
                             email = user.email.toString(),
                             photoUrl = user.photoUrl?.toString()
                         )
-                        sessionManager.setLoggedIn(true) // Update login status
-                        sessionManager.saveUserDetails(userDetails)
+                    )
+                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                    finish()
+                } else {
+                    // User does not exist, proceed with registration
+                    val userDetails = User(
+                        id = user.uid, // Assuming UID as ID
+                        name = user.displayName.toString(),
+                        email = user.email.toString(),
+                        photoUrl = user.photoUrl?.toString()
+                    )
+                    sessionManager.setLoggedIn(true) // Update login status
+                    sessionManager.saveUserDetails(userDetails)
 
-                        // Store user details in Firebase Realtime Database
-                        storeUserInDatabase(user.uid, userDetails)
+                    // Store user details in Firestore
+                    storeUserInDatabase(user.uid, userDetails)
 
-                        // Redirect to HomeActivity
-                        startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
-                        showCustomToast("Welcome! Your account has been created.", 2000)
-                        finish()
-                    }
+                    // Redirect to HomeActivity
+                    startActivity(Intent(this@SignUpActivity, HomeActivity::class.java))
+                    showCustomToast("Welcome! Your account has been created.", 2000)
+                    finish()
                 }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e("SignUpActivity", "Database error: ${error.message}")
-                    // Handle database error
-                }
-            })
+            }.addOnFailureListener { e ->
+                Log.e("SignUpActivity", "Failed to check user existence: ${e.message}")
+                // Handle error
+            }
         } else {
             showCustomToast("No internet connection", 2000)
         }
     }
 
     private fun storeUserInDatabase(userId: String, userDetails: User) {
-        database.child("users").child(userId).setValue(userDetails)
+        firestore.collection("users").document(userId).set(userDetails)
             .addOnSuccessListener {
                 Log.d("SignUpActivity", "User data saved successfully.")
             }

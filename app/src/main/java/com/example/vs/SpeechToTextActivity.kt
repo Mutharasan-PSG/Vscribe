@@ -18,8 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,14 +30,14 @@ class SpeechToTextActivity : AppCompatActivity() {
     private lateinit var buttonSaveText: Button
     private lateinit var buttonRefresh: ImageButton
     private lateinit var selectedLanguage: String
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
     private lateinit var btnSpeech: ImageButton
 
     private val inactivityTimeoutMillis: Long = 10000 // 10 seconds
     private val inactivityHandler = Handler(Looper.getMainLooper())
     private val inactivityRunnable = Runnable {
         stopSpeechRecognition()
-       // Toast.makeText(this, "Speech recognition timed out due to inactivity", Toast.LENGTH_SHORT).show()
+        // Toast.makeText(this, "Speech recognition timed out due to inactivity", Toast.LENGTH_SHORT).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,8 +80,8 @@ class SpeechToTextActivity : AppCompatActivity() {
             startSpeechRecognition()
         }
 
-        // Initialize Firebase
-        database = FirebaseDatabase.getInstance().reference.child("Files")
+        // Initialize Firestore
+        firestore = FirebaseFirestore.getInstance()
 
         buttonSaveText.setOnClickListener {
             val transcribedText = textViewTranscribed.text.toString()
@@ -205,7 +204,6 @@ class SpeechToTextActivity : AppCompatActivity() {
         return formattedText
     }
 
-
     private fun handleNavigationCommands(spokenText: String): Boolean {
         return when {
             spokenText.startsWith("Home page", ignoreCase = true) -> {
@@ -270,7 +268,6 @@ class SpeechToTextActivity : AppCompatActivity() {
         }
     }
 
-
     private fun isFindReplaceCommand(spokenText: String): Boolean {
         val words = spokenText.split(" ")
         return words.size >= 4 && words[0].equals("find", ignoreCase = true) && words[2].equals("replace", ignoreCase = true)
@@ -301,7 +298,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         builder.setPositiveButton("Save") { dialog, which ->
             val fileName = input.text.toString()
             if (fileName.isNotEmpty()) {
-                saveFileToFirebase(fileName, transcribedText)
+                saveFileToFirestore(fileName, transcribedText)
             } else {
                 Toast.makeText(this, "File name cannot be empty", Toast.LENGTH_SHORT).show()
             }
@@ -311,27 +308,41 @@ class SpeechToTextActivity : AppCompatActivity() {
         builder.show()
     }
 
-    private fun saveFileToFirebase(fileName: String, transcribedText: String) {
-        val sdf = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
-        val currentMonth = sdf.format(Date())
-        val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-        val fileId = database.push().key ?: return
+    private fun saveFileToFirestore(fileName: String, transcribedText: String) {
+        val sdfMonth = SimpleDateFormat("MMMM-yyyy", Locale.getDefault())
+        val currentMonth = sdfMonth.format(Date())
+        val sdfTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val currentTime = sdfTime.format(Date())
+
+        // Get Firestore instance
+        val firestore = FirebaseFirestore.getInstance()
+
+        // Create a unique file ID
+        val fileId = firestore.collection("Files").document().id
         val userId = SessionManager(this).getUserId() ?: "unknown"
+
+        // Define the file data
         val fileData = mapOf(
             "timestamp" to currentTime,
             "fileId" to fileId,
             "fileName" to "$fileName.txt",
             "content" to transcribedText,
-            "userId" to userId  // Add userId to the file data
+            "userId" to userId
         )
-        database.child(currentMonth).child(fileId).setValue(fileData).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Toast.makeText(this, "File saved successfully", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, DownloadActivity::class.java)
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show()
+
+        // Save file to the specific month's subcollection
+        firestore.collection("Files").document(currentMonth)
+            .collection("UserFiles").document(fileId)
+            .set(fileData)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "File saved successfully", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, DownloadActivity::class.java)
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(this, "Failed to save file", Toast.LENGTH_SHORT).show()
+                }
             }
-        }
     }
+
 }

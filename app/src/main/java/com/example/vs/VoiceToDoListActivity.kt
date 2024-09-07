@@ -6,8 +6,10 @@ import android.app.AlarmManager
 import android.app.AlertDialog
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -18,20 +20,15 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import android.view.View
 import android.widget.ImageButton
 import android.widget.ListView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -41,7 +38,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var listViewTasks: ListView
     private lateinit var speechButton: ImageButton
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
     private lateinit var userId: String
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var speechRecognizer: SpeechRecognizer
@@ -50,25 +47,31 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private lateinit var historyButton: ImageButton
     private var taskName: String? = null
     private var isWaitingForTaskTime = false
-    private lateinit var removingTasksMessage: TextView
+
 
     private var taskInputTimeoutHandler: Handler? = null
 
     private val taskList = mutableListOf<Task>()
     private val REQUEST_NOTIFICATION_PERMISSION = 101
 
+    private val refreshReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            loadTasksFromDatabase() // Reload tasks to update UI
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_to_do_list)
 
-        // Initialize Firebase
+        // Initialize Firestore
+        firestore = FirebaseFirestore.getInstance()
         userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-        database = FirebaseDatabase.getInstance().reference.child("Voice_ToDo").child(userId)
 
         // Initialize UI components
         listViewTasks = findViewById(R.id.list_view_tasks)
         speechButton = findViewById(R.id.btn_speech)
-        removingTasksMessage = findViewById(R.id.tv_removing_tasks)
+
         // Initialize TextToSpeech
         textToSpeech = TextToSpeech(this, this)
         checkNotificationPermission()
@@ -83,11 +86,11 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                speechButton.setImageResource(R.drawable.voice_frequency)
+                speechButton.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
-                speechButton.setImageResource(R.drawable.voice_frequency)
+                speechButton.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -137,8 +140,9 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
             }
         }
+        registerReceiver(refreshReceiver, IntentFilter("REFRESH_TASK_LIST"))
 
-        // Load tasks from Firebase
+        // Load tasks from Firestore
         loadTasksFromDatabase()
     }
 
@@ -229,7 +233,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech.speak("Please say the task name.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = false
         startListening()
-       // startTaskInputTimeout()
+
     }
 
 
@@ -237,14 +241,14 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         textToSpeech.speak("Please say the new task name.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = false
         startListening()
-      //  startTaskInputTimeout()
+
     }
 
     private fun startListeningForTaskTime() {
         textToSpeech.speak("Please say the task time.", TextToSpeech.QUEUE_FLUSH, null, null)
         isWaitingForTaskTime = true
         startListening()
-       // startTaskInputTimeout()
+
     }
 
     private fun startListening() {
@@ -258,22 +262,8 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
 
- /*   private fun startTaskInputTimeout() {
-        taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Remove any previous callbacks
-        taskInputTimeoutHandler = Handler(Looper.getMainLooper())
-        taskInputTimeoutHandler?.postDelayed({
-            if (isWaitingForTaskTime) {
-                // Stop listening and show timeout message
-                speechRecognizer.stopListening()
-                textToSpeech.speak("No task time provided. Operation terminated.", TextToSpeech.QUEUE_FLUSH, null, null)
-            }
-            resetTaskInput()
-        }, 8000) // 8 seconds timeout
-    }
-*/
-
     private fun handleTaskTimeInput(input: String) {
-      //  taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task time
+        //  taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task time
         val timing = parseTaskTime(input.trim())
         if (timing == null) {
             textToSpeech.speak("Task time is invalid or not provided. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
@@ -288,7 +278,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 textToSpeech.speak("Task added: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
             }
             resetTaskInput()
-          //  taskInputTimeoutHandler?.removeCallbacksAndMessages(null)
+
         }
     }
 
@@ -305,13 +295,11 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             taskToModify(taskToModify) // Call method to handle modifying task
         } else {
             taskName = input.trim()
-         //   taskInputTimeoutHandler?.removeCallbacksAndMessages(null) // Cancel timeout for task name
+
             if (taskName.isNullOrEmpty()) {
                 textToSpeech.speak("Task name is invalid. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
 
-            }/* else if (isModifyingTask) {
-                startListeningForTaskTime()
-            }*/ else {
+            } else {
                 startListeningForTaskTime()
             }
         }
@@ -322,92 +310,131 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         this.taskToModify = taskToModify
         startListeningForNewTaskName()
     }
-
     private fun updateTaskInDatabase(oldTaskName: String, newTaskName: String, newTiming: String) {
-        database.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                var taskFound = false
-                for (data in snapshot.children) {
-                    val task = data.getValue(Task::class.java)
-                    if (task?.taskName?.trim()?.toLowerCase(Locale.getDefault()) == oldTaskName) {
-                        val updatedTask = Task(newTaskName, newTiming, task.timestamp)
-                        data.ref.setValue(updatedTask)
-                        taskFound = true
-                    }
-                }
-                if (taskFound) {
-                    loadTasksFromDatabase() // Reload tasks to update UI
-                } else {
+        firestore.collection("Voice_ToDo")
+            .document("Scheduled_tasks")
+            .collection(userId)
+            .whereEqualTo("taskName", oldTaskName)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
                     textToSpeech.speak("No such task found to modify.", TextToSpeech.QUEUE_FLUSH, null, null)
+                } else {
+                    for (document in documents) {
+                        val updatedTask = Task(newTaskName, newTiming, document.getString("timestamp"))
+                        document.reference.set(updatedTask)
+                    }
+                    loadTasksFromDatabase() // Reload tasks to update UI
+                    textToSpeech.speak("Task modified: $newTaskName", TextToSpeech.QUEUE_FLUSH, null, null)
                 }
             }
-
-            override fun onCancelled(error: DatabaseError) {
+            .addOnFailureListener {
                 Toast.makeText(this@VoiceToDoListActivity, "Failed to modify task", Toast.LENGTH_SHORT).show()
             }
-        })
     }
 
-    private fun showRemovingTasksMessage(show: Boolean) {
-        removingTasksMessage.visibility = if (show) View.VISIBLE else View.GONE
-    }
 
+
+    private fun removeTaskFromList(taskName: String) {
+        firestore.collection("Voice_ToDo")
+            .document("Scheduled_tasks")
+            .collection(userId)
+            .whereEqualTo("taskName", taskName)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    textToSpeech.speak("No such task found.", TextToSpeech.QUEUE_FLUSH, null, null)
+                } else {
+                    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    for (document in documents) {
+                        document.reference.delete()
+                        cancelScheduledNotification(taskName, alarmManager)
+                    }
+                    textToSpeech.speak("Task removed: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
+                    loadTasksFromDatabase() // Reload tasks to update UI
+                }
+            }
+            .addOnFailureListener {
+                Toast.makeText(this@VoiceToDoListActivity, "Failed to remove task", Toast.LENGTH_SHORT).show()
+            }
+    }
 
     private fun removeAllTasks() {
-        showRemovingTasksMessage(true)
-        database.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    for (data in snapshot.children) {
-                        data.ref.removeValue()
+        firestore.collection("Voice_ToDo")
+            .document("Scheduled_tasks")
+            .collection(userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    textToSpeech.speak("No tasks found to remove.", TextToSpeech.QUEUE_FLUSH, null, null)
+                } else {
+                    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    for (document in documents) {
+                        document.reference.delete()
+                        cancelScheduledNotification(document.getString("taskName") ?: "", alarmManager)
                     }
                     textToSpeech.speak("All tasks have been removed.", TextToSpeech.QUEUE_FLUSH, null, null)
                     loadTasksFromDatabase() // Reload tasks to update UI
-                } else {
-                    textToSpeech.speak("No tasks found to remove.", TextToSpeech.QUEUE_FLUSH, null, null)
                 }
-                showRemovingTasksMessage(false)
             }
-
-            override fun onCancelled(error: DatabaseError) {
+            .addOnFailureListener {
                 Toast.makeText(this@VoiceToDoListActivity, "Failed to remove tasks", Toast.LENGTH_SHORT).show()
-                showRemovingTasksMessage(false)
             }
-        })
-    }
-
-    private fun removeTaskFromList(taskName: String) {
-        showRemovingTasksMessage(true)
-        database.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                var taskFound = false
-                for (data in snapshot.children) {
-                    val task = data.getValue(Task::class.java)
-                    if (task?.taskName?.trim()?.toLowerCase(Locale.getDefault()) == taskName) {
-                        data.ref.removeValue()
-                        taskFound = true
-                    }
-                }
-                if (taskFound) {
-                    textToSpeech.speak("Task removed: $taskName", TextToSpeech.QUEUE_FLUSH, null, null)
-                    loadTasksFromDatabase() // Reload tasks to update UI
-                } else {
-                    textToSpeech.speak("No such task found.", TextToSpeech.QUEUE_FLUSH, null, null)
-                }
-                showRemovingTasksMessage(false)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@VoiceToDoListActivity, "Failed to remove task", Toast.LENGTH_SHORT).show()
-                showRemovingTasksMessage(false)
-            }
-        })
     }
 
     private fun resetTaskInput() {
         taskName = null
         isWaitingForTaskTime = false
     }
+
+    private fun cancelScheduledNotification(taskName: String, alarmManager: AlarmManager) {
+        val intent = Intent(this, NotificationReceiver::class.java).apply {
+            putExtra("taskName", taskName)
+        }
+        val requestCode = taskName.hashCode() // Consistent request code
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+        Log.d("Notification", "Cancelled notification for task: $taskName with requestCode: $requestCode")
+    }
+
+    @SuppressLint("ScheduleExactAlarm")
+    private fun scheduleNotification(taskName: String, timing: String) {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, NotificationReceiver::class.java).apply {
+            putExtra("taskName", taskName)
+        }
+        val requestCode = taskName.hashCode() // Consistent request code
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerTime = parseTime(timing)
+        if (triggerTime > System.currentTimeMillis()) {
+            try {
+                if (canScheduleExactAlarms(this)) {
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                    Log.d("Notification", "Scheduled notification for task: $taskName at $triggerTime with requestCode: $requestCode")
+                } else {
+                    Toast.makeText(this, "Permission to schedule exact alarms is not granted. Please enable it in settings.", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: SecurityException) {
+                Toast.makeText(this, "Permission to schedule exact alarms is required. Please enable it in settings.", Toast.LENGTH_LONG).show()
+                e.printStackTrace()
+            }
+        } else {
+            textToSpeech.speak("Your mentioned time is in the past. Kindly retry with a future time.", TextToSpeech.QUEUE_FLUSH, null, null)
+            Toast.makeText(this, "The specified time is in the past. Please provide a future time.", Toast.LENGTH_LONG).show()
+        }
+    }
+
 
     private fun parseTaskTime(input: String): String? {
         val taskPattern = Pattern.compile("(\\b(?:tomorrow|today|next\\s+week|monday|\\d{1,2}(?:am|pm|:|\\s))+.*)?$", Pattern.CASE_INSENSITIVE)
@@ -428,38 +455,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
-    @SuppressLint("ScheduleExactAlarm")
-    private fun scheduleNotification(taskName: String, timing: String) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(this, NotificationReceiver::class.java).apply {
-            putExtra("taskName", taskName)
-        }
 
-        val requestCode = System.currentTimeMillis().toInt() // Unique request code
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val triggerTime = parseTime(timing)
-        if (triggerTime > System.currentTimeMillis()) {
-            try {
-                if (canScheduleExactAlarms(this)) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                } else {
-                    Toast.makeText(this, "Permission to schedule exact alarms is not granted. Please enable it in settings.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: SecurityException) {
-                Toast.makeText(this, "Permission to schedule exact alarms is required. Please enable it in settings.", Toast.LENGTH_LONG).show()
-                e.printStackTrace()
-            }
-        } else {
-            textToSpeech.speak("Your mentioned time is in the past. Kindly retry with a future time.", TextToSpeech.QUEUE_FLUSH, null, null)
-            Toast.makeText(this, "The specified time is in the past. Please provide a future time.", Toast.LENGTH_LONG).show()
-        }
-    }
 
     private fun parseTime(timing: String): Long {
         val calendar = Calendar.getInstance()
@@ -543,24 +539,31 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     private fun saveTaskToDatabase(taskName: String, timing: String?) {
         val timeStamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Calendar.getInstance().time)
         val task = Task(taskName, timing, timeStamp)
-        database.push().setValue(task)
+        firestore.collection("Voice_ToDo")
+            .document("Scheduled_tasks")
+            .collection(userId)
+            .add(task)
+        loadTasksFromDatabase()
     }
+
     private fun loadTasksFromDatabase() {
-        database.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
+        firestore.collection("Voice_ToDo")
+            .document("Scheduled_tasks")
+            .collection(userId)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .get()
+            .addOnSuccessListener { documents ->
                 taskList.clear()
-                for (data in snapshot.children) {
-                    val task = data.getValue(Task::class.java)
+                for (document in documents) {
+                    val task = document.toObject(Task::class.java)
                     task?.let { taskList.add(it) }
                 }
                 sortTasksByTiming()
                 updateTaskListView()
             }
-
-            override fun onCancelled(error: DatabaseError) {
+            .addOnFailureListener {
                 Toast.makeText(this@VoiceToDoListActivity, "Failed to load tasks", Toast.LENGTH_SHORT).show()
             }
-        })
     }
 
     private fun updateTaskListView() {
@@ -593,6 +596,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onDestroy() {
         textToSpeech.stop()
+        unregisterReceiver(refreshReceiver)
         textToSpeech.shutdown()
         speechRecognizer.destroy()
         super.onDestroy()

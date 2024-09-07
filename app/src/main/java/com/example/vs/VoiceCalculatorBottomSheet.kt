@@ -16,11 +16,7 @@ import android.widget.Toast
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.firestore.FirebaseFirestore
 import net.objecthunter.exp4j.ExpressionBuilder
 import net.objecthunter.exp4j.function.Function
 import java.util.Locale
@@ -34,7 +30,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private lateinit var historyListView: ListView
     private lateinit var startButton: ImageButton
     private var lastResult: Double = 0.0
-    private lateinit var database: DatabaseReference
+    private lateinit var firestore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private val historyList = mutableListOf<String>()
     private lateinit var historyAdapter: VoiceCalculatorAdapter
@@ -47,7 +43,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     ): View? {
         val view = inflater.inflate(R.layout.fragment_voice_calculator, container, false)
 
-        history=view.findViewById(R.id.history)
+        history = view.findViewById(R.id.history)
         inputTextView = view.findViewById(R.id.inputTextView)
         resultTextView = view.findViewById(R.id.resultTextView)
         historyListView = view.findViewById(R.id.historyListView)
@@ -59,7 +55,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         initializeSpeechRecognizer()
         textToSpeech = TextToSpeech(requireContext(), this)
         auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance().reference
+        firestore = FirebaseFirestore.getInstance()
 
         startButton.setOnClickListener {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
@@ -78,11 +74,11 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) {
-                startButton.setImageResource(R.drawable.voice_frequency)
+                startButton.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onBeginningOfSpeech() {
-                startButton.setImageResource(R.drawable.voice_frequency)
+                startButton.setImageResource(R.drawable.voice_frequencyy)
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -116,7 +112,6 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         })
     }
 
-
     override fun onStart() {
         super.onStart()
         val dialog = dialog
@@ -127,6 +122,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
     }
+
     private fun convertLargeNumbers(input: String): String {
         return input
             .replace(Regex("(\\d+(\\.\\d+)?)\\s*lakh(s)?")) { matchResult ->
@@ -150,6 +146,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 (number * 1000000000000).toString()
             }
     }
+
     private fun handleInput(input: String) {
         try {
             var expressionString = input.lowercase(Locale.getDefault())
@@ -248,8 +245,6 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         }
     }
 
-
-
     private fun handleNavigationCommands(input: String): Boolean {
         return when {
             input.contains("home page", ignoreCase = true) -> {
@@ -339,45 +334,40 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
     private fun saveHistory(input: String, result: String) {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("Calculator_History").child(it.uid)
+            val userHistoryRef = firestore.collection("Calculator_History").document(it.uid)
             val timestamp = System.currentTimeMillis()
             val historyItem = mapOf(
                 "input" to input,
                 "result" to result,
                 "timestamp" to timestamp
             )
-            userHistoryRef.push().setValue(historyItem)
+            userHistoryRef.set(historyItem)
+            fetchHistory()
         }
     }
 
     private fun fetchHistory() {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = database.child("Calculator_History").child(it.uid)
-            userHistoryRef.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
+            val userHistoryRef = firestore.collection("Calculator_History").document(it.uid)
+            val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000 // 3 days in milliseconds
+            val currentTime = System.currentTimeMillis()
+
+            userHistoryRef.get()
+                .addOnSuccessListener { document ->
                     historyList.clear()
-                    val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000 // 3 days in milliseconds
-                    val currentTime = System.currentTimeMillis()
+                    val input = document.getString("input")
+                    val result = document.getString("result")
+                    val timestamp = document.getLong("timestamp")
 
-                    if (snapshot.exists()) {
-                        val tempList = mutableListOf<String>() // Temporary list to hold history items
-                        for (historySnapshot in snapshot.children) {
-                            val input = historySnapshot.child("input").getValue(String::class.java)
-                            val result = historySnapshot.child("result").getValue(String::class.java)
-                            val timestamp = historySnapshot.child("timestamp").getValue(Long::class.java)
-
-                            if (input != null && result != null && timestamp != null) {
-                                // Check if the history is within the last 3 days
-                                if (currentTime - timestamp <= threeDaysInMillis) {
-                                    tempList.add("Input: $input | Result: $result")
-                                }
-                            }
+                    if (input != null && result != null && timestamp != null) {
+                        // Check if the history is within the last 3 days
+                        if (currentTime - timestamp <= threeDaysInMillis) {
+                            historyList.add("Input: $input | Result: $result")
                         }
-                        // Reverse the tempList to ensure the most recent items are first
-                        historyList.addAll(tempList.reversed())
                     }
-                    historyAdapter.notifyDataSetChanged()
+
+                    // Add the most recent items first
                     if (historyList.isEmpty()) {
                         historyEmptyTextView.visibility = View.VISIBLE
                         history.visibility = View.GONE
@@ -387,16 +377,13 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                         history.visibility = View.VISIBLE
                         historyListView.visibility = View.VISIBLE
                     }
+                    historyAdapter.notifyDataSetChanged()
                 }
-
-                override fun onCancelled(error: DatabaseError) {
+                .addOnFailureListener { e ->
                     Toast.makeText(requireContext(), "Failed to load history", Toast.LENGTH_SHORT).show()
                 }
-            })
         }
     }
-
-
 
     override fun onDestroy() {
         super.onDestroy()
@@ -404,4 +391,3 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         textToSpeech.shutdown()
     }
 }
-

@@ -12,10 +12,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 
 class NotificationReceiver : BroadcastReceiver() {
+
+    private val firestore = FirebaseFirestore.getInstance()
 
     override fun onReceive(context: Context, intent: Intent) {
         val taskName = intent.getStringExtra("taskName") ?: "No task name"
@@ -58,31 +59,41 @@ class NotificationReceiver : BroadcastReceiver() {
         // Move the task to history after the notification is sent
         moveTaskToHistory(context, taskName)
     }
-
     private fun moveTaskToHistory(context: Context, taskName: String) {
-        val database: DatabaseReference = FirebaseDatabase.getInstance().reference
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-        // Reference to the user's tasks
-        val taskRef = database.child("Voice_ToDo").child(userId)
+        // Reference to the user's tasks and history
+        val tasksRef = firestore.collection("Voice_ToDo").document("Scheduled_tasks").collection(userId)
+        val historyRef = firestore.collection("Voice_ToDo").document("Task_History").collection(userId)
 
         // Find the task by name and move it to the history
-        taskRef.orderByChild("taskName").equalTo(taskName).get().addOnSuccessListener { snapshot ->
-            for (data in snapshot.children) {
-                val task = data.getValue(Task::class.java)
-                if (task != null) {
-                    // Save the task to the history node
-                    database.child("Task_History").child(userId).push().setValue(task)
-                    // Remove the task from the active list
-                    data.ref.removeValue()
+        tasksRef.whereEqualTo("taskName", taskName).get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    // Task might have been removed, handle appropriately
+                    return@addOnSuccessListener
                 }
-            }
-        }.addOnFailureListener { error ->
-            // Log the error
-            Log.e("NotificationReceiver", "Failed to move task to history: ${error.message}")
 
-            // You can also show a toast message to the user if needed
-            Toast.makeText(context, "Failed to archive task. Please try again.", Toast.LENGTH_SHORT).show()
-        }
+                for (document in snapshot.documents) {
+                    val task = document.toObject(Task::class.java)
+                    if (task != null) {
+                        // Save the task to the history collection
+                        historyRef.add(task)
+                        // Remove the task from the active tasks
+                        document.reference.delete()
+                    }
+                }
+                val refreshIntent = Intent("REFRESH_TASK_LIST")
+                context.sendBroadcast(refreshIntent)
+            }
+            .addOnFailureListener { error ->
+                // Log the error
+                Log.e("NotificationReceiver", "Failed to move task to history: ${error.message}")
+
+                // Show a toast message to the user if needed
+                Toast.makeText(context, "Failed to archive task. Please try again.", Toast.LENGTH_SHORT).show()
+            }
     }
+
+
 }

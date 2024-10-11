@@ -268,4 +268,3 @@ class HomeActivity : AppCompatActivity() {
         speechRecognizer.destroy()
     }
 }
-

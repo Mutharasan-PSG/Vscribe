@@ -19,6 +19,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import android.widget.ImageButton
 import android.widget.ListView
@@ -73,7 +74,26 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechButton = findViewById(R.id.btn_speech)
 
         // Initialize TextToSpeech
-        textToSpeech = TextToSpeech(this, this)
+        textToSpeech = TextToSpeech(this, this).apply{
+
+        setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                // Speech started
+            }
+
+            override fun onDone(utteranceId: String?) {
+                // TTS finished speaking, start the speech recognizer
+                runOnUiThread {
+                    startListening() // Start listening after TTS completes
+                }
+            }
+
+            override fun onError(utteranceId: String?) {
+                // Handle errors if needed
+            }
+        })
+    }
+
         checkNotificationPermission()
 
         val btnHistory = findViewById<ImageButton>(R.id.btn_history)
@@ -230,26 +250,27 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
 
     private fun startListeningForTaskName() {
-        textToSpeech.speak("Please say the task name.", TextToSpeech.QUEUE_FLUSH, null, null)
+        val utteranceId = "taskNamePrompt"
+        textToSpeech.speak("Please say the task name.", TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         isWaitingForTaskTime = false
-        startListening()
-
+        // Speech recognizer will start in onDone of TTS utterance progress listener
     }
 
 
     private fun startListeningForNewTaskName() {
-        textToSpeech.speak("Please say the new task name.", TextToSpeech.QUEUE_FLUSH, null, null)
+        val utteranceId = "newTaskNamePrompt"
+        textToSpeech.speak("Please say the new task name.", TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         isWaitingForTaskTime = false
-        startListening()
-
+        // Speech recognizer will start in onDone of TTS utterance progress listener
     }
 
     private fun startListeningForTaskTime() {
-        textToSpeech.speak("Please say the task time.", TextToSpeech.QUEUE_FLUSH, null, null)
+        val utteranceId = "taskTimePrompt"
+        textToSpeech.speak("Please say the task time.", TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         isWaitingForTaskTime = true
-        startListening()
-
+        // Speech recognizer will start in onDone of TTS utterance progress listener
     }
+
 
     private fun startListening() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -260,6 +281,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         speechRecognizer.startListening(intent)
         Toast.makeText(this, "Listening to your speech", Toast.LENGTH_SHORT).show()
     }
+
 
 
     private fun handleTaskTimeInput(input: String) {

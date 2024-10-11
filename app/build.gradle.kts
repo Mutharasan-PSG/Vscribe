@@ -46,6 +46,10 @@ android {
 }
 
 dependencies {
+  /* implementation ("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation ("com.spotify.android:auth:1.2.3")
+    implementation ("com.spotify.android:spotify-auth:1.2.5")
+    implementation ("com.spotify.android:spotify-player:1.2.3") */
 
     implementation ("com.google.firebase:firebase-firestore:25.1.0")
     implementation ("com.google.firebase:firebase-firestore-ktx")

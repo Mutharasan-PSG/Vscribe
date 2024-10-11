@@ -17,6 +17,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import net.objecthunter.exp4j.ExpressionBuilder
 import net.objecthunter.exp4j.function.Function
 import java.util.Locale
@@ -331,21 +332,28 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             Toast.makeText(requireContext(), "Initialization failed", Toast.LENGTH_SHORT).show()
         }
     }
+
     private fun saveHistory(input: String, result: String) {
         val currentUser = auth.currentUser
         currentUser?.let {
-            val userHistoryRef = firestore.collection("Calculator_History").document(it.uid)
+            val userHistoryRef = firestore.collection("Calculator_History")
+                .document(it.uid)
+                .collection("history") // Store history in a subcollection
             val timestamp = System.currentTimeMillis()
             val historyItem = mapOf(
                 "input" to input,
                 "result" to result,
                 "timestamp" to timestamp
             )
-            userHistoryRef.set(historyItem)
-            fetchHistory()
+            userHistoryRef.add(historyItem) // Add a new document for each history item
+                .addOnSuccessListener {
+                    fetchHistory() // Refresh history after saving
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(requireContext(), "Failed to save history", Toast.LENGTH_SHORT).show()
+                }
         }
     }
-
     private fun fetchHistory() {
         val currentUser = auth.currentUser
         currentUser?.let {
@@ -353,21 +361,29 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
             val threeDaysInMillis = 3 * 24 * 60 * 60 * 1000 // 3 days in milliseconds
             val currentTime = System.currentTimeMillis()
 
-            userHistoryRef.get()
-                .addOnSuccessListener { document ->
+            // Query for history items within the last 3 days, ordered by timestamp descending
+            firestore.collection("Calculator_History")
+                .document(it.uid)
+                .collection("history")
+                .whereGreaterThanOrEqualTo("timestamp", currentTime - threeDaysInMillis)
+                .orderBy("timestamp", Query.Direction.DESCENDING) // Order by timestamp descending
+                .get()
+                .addOnSuccessListener { querySnapshot ->
                     historyList.clear()
-                    val input = document.getString("input")
-                    val result = document.getString("result")
-                    val timestamp = document.getLong("timestamp")
 
-                    if (input != null && result != null && timestamp != null) {
-                        // Check if the history is within the last 3 days
-                        if (currentTime - timestamp <= threeDaysInMillis) {
+                    // Loop through all the documents
+                    for (document in querySnapshot) {
+                        val input = document.getString("input")
+                        val result = document.getString("result")
+                        val timestamp = document.getLong("timestamp")
+
+                        if (input != null && result != null && timestamp != null) {
+                            // Add each history item to the list
                             historyList.add("Input: $input | Result: $result")
                         }
                     }
 
-                    // Add the most recent items first
+                    // Display the history or show the empty state
                     if (historyList.isEmpty()) {
                         historyEmptyTextView.visibility = View.VISIBLE
                         history.visibility = View.GONE
@@ -384,6 +400,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
                 }
         }
     }
+
 
     override fun onDestroy() {
         super.onDestroy()

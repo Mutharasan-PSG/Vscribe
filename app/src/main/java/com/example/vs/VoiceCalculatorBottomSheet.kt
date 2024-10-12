@@ -59,6 +59,7 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         firestore = FirebaseFirestore.getInstance()
 
         startButton.setOnClickListener {
+            stopTTS()
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
@@ -401,6 +402,11 @@ class VoiceCalculatorBottomSheet : BottomSheetDialogFragment(), TextToSpeech.OnI
         }
     }
 
+    private fun stopTTS() {
+        if (textToSpeech != null && textToSpeech.isSpeaking) {
+            textToSpeech.stop()
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()

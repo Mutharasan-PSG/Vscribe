@@ -51,6 +51,10 @@ dependencies {
     implementation ("com.spotify.android:spotify-auth:1.2.5")
     implementation ("com.spotify.android:spotify-player:1.2.3") */
 
+    implementation ("org.tensorflow:tensorflow-lite:2.12.0")  // Check for the latest version
+    implementation ("org.tensorflow:tensorflow-lite-support:0.4.0") // Optional, for additional support functions
+
+    
     implementation ("com.google.firebase:firebase-firestore:25.1.0")
     implementation ("com.google.firebase:firebase-firestore-ktx")
 

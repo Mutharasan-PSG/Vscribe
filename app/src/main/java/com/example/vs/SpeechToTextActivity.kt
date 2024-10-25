@@ -74,7 +74,7 @@ class SpeechToTextActivity : AppCompatActivity() {
         // Handle refresh button click
         refreshButton.setOnClickListener {
             transcribedTextView.text = ""  // Clear transcribed text
-            startSpeechRecognition(getLanguageCode(languageSpinner.selectedItem.toString()))
+            //startSpeechRecognition(getLanguageCode(languageSpinner.selectedItem.toString()))
         }
 
         // Save the transcribed text
@@ -132,25 +132,40 @@ class SpeechToTextActivity : AppCompatActivity() {
             override fun onResults(results: Bundle?) {
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 if (matches != null) {
-                    val spokenText = matches[0]
-                    val formattedText = handleFormattingCommands(spokenText)
+                    var spokenText = matches[0]
+                    var formattedText = handleFormattingCommands(spokenText)
 
+                    // Check if the transcribed text needs capitalization based on sentence boundaries
+                    val currentText = transcribedTextView.text.toString()
+
+                    // Check if current text is empty or ends with sentence-ending punctuation
+                    if (currentText.isEmpty() || currentText.endsWith(".") || currentText.endsWith("!") || currentText.endsWith("?")) {
+                        // Capitalize the first letter if starting a new sentence
+                        formattedText = formattedText.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                    } else {
+                        // If it's in the middle of a sentence, lowercase the first character
+                        formattedText = formattedText.replaceFirstChar { it.lowercase(Locale.getDefault()) }
+                    }
+
+                    // Preserve the existing find/replace logic
                     if (isFindReplaceCommand(formattedText)) {
                         handleFindReplace(formattedText)
                     } else {
                         // Append the new spoken text to the existing text
-                        val currentText = transcribedTextView.text.toString()
                         if (currentText.isEmpty() || currentText.endsWith("\n")) {
                             transcribedTextView.append(formattedText) // No space if new line
                         } else {
                             transcribedTextView.append(" $formattedText") // Add space if needed
                         }
                     }
+
+                    // Preserve the navigation commands logic
                     handleNavigationCommands(formattedText)
                 }
                 startSpeechButton.setImageResource(R.drawable.mic) // Restore mic icon
                 inactivityHandler.removeCallbacks(inactivityRunnable)
             }
+
 
 
             override fun onPartialResults(partialResults: Bundle?) {
@@ -217,69 +232,69 @@ class SpeechToTextActivity : AppCompatActivity() {
         }
     }
 
-      private fun handleNavigationCommands(spokenText: String): Boolean {
-          return when {
-              spokenText.startsWith("Home page", ignoreCase = true) -> {
-                  startActivity(Intent(this, HomeActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Speech To Text", ignoreCase = true) -> {
-                  startActivity(Intent(this, SpeechToTextActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Voice Calculator", ignoreCase = true) -> {
-                  val bottomSheet = VoiceCalculatorBottomSheet()
-                  bottomSheet.show(supportFragmentManager, bottomSheet.tag)
-                  true
-              }
-              spokenText.startsWith("Voice To Do List", ignoreCase = true) -> {
-                  startActivity(Intent(this, VoiceToDoListActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Profile", ignoreCase = true) -> {
-                  startActivity(Intent(this, ProfileActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Downloads", ignoreCase = true) -> {
-                  startActivity(Intent(this, DownloadActivity::class.java))
-                  true
-              }
-              spokenText.contains("History of task", ignoreCase = true) -> {
-                  startActivity(Intent(this, HistoryActivity::class.java))
-                  true
-              }
-              spokenText.contains("Go to History of task page", ignoreCase = true) -> {
-                  startActivity(Intent(this, HistoryActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Go to Home page", ignoreCase = true) -> {
-                  startActivity(Intent(this, HomeActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Go to Speech To Text page", ignoreCase = true) -> {
-                  startActivity(Intent(this, SpeechToTextActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Go to Voice Calculator page", ignoreCase = true) -> {
-                  val bottomSheet = VoiceCalculatorBottomSheet()
-                  bottomSheet.show(supportFragmentManager, bottomSheet.tag)
-                  true
-              }
-              spokenText.startsWith("Go to Voice To Do List page", ignoreCase = true) -> {
-                  startActivity(Intent(this, VoiceToDoListActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Go to Profile page", ignoreCase = true) -> {
-                  startActivity(Intent(this, ProfileActivity::class.java))
-                  true
-              }
-              spokenText.startsWith("Go to Downloads page", ignoreCase = true) -> {
-                  startActivity(Intent(this, DownloadActivity::class.java))
-                  true
-              }
-              else -> false
-          }
-      }
+    private fun handleNavigationCommands(spokenText: String): Boolean {
+        return when {
+            spokenText.startsWith("Home page", ignoreCase = true) -> {
+                startActivity(Intent(this, HomeActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Speech To Text", ignoreCase = true) -> {
+                startActivity(Intent(this, SpeechToTextActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Voice Calculator", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+                true
+            }
+            spokenText.startsWith("Voice To Do List", ignoreCase = true) -> {
+                startActivity(Intent(this, VoiceToDoListActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Profile", ignoreCase = true) -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Downloads", ignoreCase = true) -> {
+                startActivity(Intent(this, DownloadActivity::class.java))
+                true
+            }
+            spokenText.contains("History of task", ignoreCase = true) -> {
+                startActivity(Intent(this, HistoryActivity::class.java))
+                true
+            }
+            spokenText.contains("Go to History of task page", ignoreCase = true) -> {
+                startActivity(Intent(this, HistoryActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Go to Home page", ignoreCase = true) -> {
+                startActivity(Intent(this, HomeActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Go to Speech To Text page", ignoreCase = true) -> {
+                startActivity(Intent(this, SpeechToTextActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Go to Voice Calculator page", ignoreCase = true) -> {
+                val bottomSheet = VoiceCalculatorBottomSheet()
+                bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+                true
+            }
+            spokenText.startsWith("Go to Voice To Do List page", ignoreCase = true) -> {
+                startActivity(Intent(this, VoiceToDoListActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Go to Profile page", ignoreCase = true) -> {
+                startActivity(Intent(this, ProfileActivity::class.java))
+                true
+            }
+            spokenText.startsWith("Go to Downloads page", ignoreCase = true) -> {
+                startActivity(Intent(this, DownloadActivity::class.java))
+                true
+            }
+            else -> false
+        }
+    }
 
 
 

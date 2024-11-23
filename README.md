@@ -14,4 +14,4 @@ Software Requirements
 Steps to run the app:
 - Open using the Android Studio 2024.1.1 (Minimum requirement)
 - Build the Application without any error
-- Can use any of the device or android emulator to run the application.
+- Can use any of the smartphone or android emulator to run the application.

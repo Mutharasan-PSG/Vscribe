@@ -1,8 +1,9 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_marginLeft="14dp">
+    android:layout_marginStart="14dp">
 
     <TextView
         android:id="@+id/Profile"
@@ -82,20 +83,22 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/profile_email"
-        android:layout_marginStart="124dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
         android:layout_marginTop="52dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:fontFamily="@font/poppins_medium"
         android:background="@drawable/rounded_button"
-        android:padding="7dp"
+        android:padding="12dp"
+        android:elevation="15dp"
         android:clickable="true"
         android:focusable="true">
 
         <ImageView
             android:id="@+id/sign_out_image"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="22dp"
             android:src="@drawable/signout"
             android:scaleType="fitCenter"
             android:contentDescription="Sign Out" />
@@ -104,9 +107,10 @@
             android:id="@+id/sign_out_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="SIGN OUT"
+            android:text="Sign out"
             android:textColor="@color/white"
-
+            android:textSize="18sp"
+            android:layout_marginEnd="3dp"
             android:layout_marginStart="8dp" />
     </LinearLayout>
 

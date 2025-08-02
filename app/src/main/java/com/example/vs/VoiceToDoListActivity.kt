@@ -1,4 +1,3 @@
-
 package com.example.vs
 
 import android.annotation.SuppressLint
@@ -11,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -61,6 +61,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_voice_to_do_list)
@@ -160,7 +161,11 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
             }
         }
-        registerReceiver(refreshReceiver, IntentFilter("REFRESH_TASK_LIST"))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(refreshReceiver, IntentFilter("REFRESH_TASK_LIST"), RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(refreshReceiver, IntentFilter("REFRESH_TASK_LIST"))
+        }
 
         // Load tasks from Firestore
         loadTasksFromDatabase()
@@ -306,7 +311,7 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
 
     private fun handleTaskNameInput(input: String) {
-        val trimmedInput = input.trim().toLowerCase(Locale.getDefault())
+        val trimmedInput = input.trim().lowercase()
         if (trimmedInput.startsWith("remove all task")) {
             removeAllTasks()
         } else if (trimmedInput.startsWith("remove ")) {
@@ -317,10 +322,8 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             taskToModify(taskToModify) // Call method to handle modifying task
         } else {
             taskName = input.trim()
-
             if (taskName.isNullOrEmpty()) {
                 textToSpeech.speak("Task name is invalid. Please try again.", TextToSpeech.QUEUE_FLUSH, null, null)
-
             } else {
                 startListeningForTaskTime()
             }
@@ -446,14 +449,26 @@ class VoiceToDoListActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     Log.d("Notification", "Scheduled notification for task: $taskName at $triggerTime with requestCode: $requestCode")
                 } else {
                     Toast.makeText(this, "Permission to schedule exact alarms is not granted. Please enable it in settings.", Toast.LENGTH_LONG).show()
+                    // Prompt user to grant permission
+                    promptForExactAlarmPermission()
                 }
             } catch (e: SecurityException) {
                 Toast.makeText(this, "Permission to schedule exact alarms is required. Please enable it in settings.", Toast.LENGTH_LONG).show()
+                promptForExactAlarmPermission()
                 e.printStackTrace()
             }
         } else {
             textToSpeech.speak("Your mentioned time is in the past. Kindly retry with a future time.", TextToSpeech.QUEUE_FLUSH, null, null)
             Toast.makeText(this, "The specified time is in the past. Please provide a future time.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun promptForExactAlarmPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
         }
     }
 

@@ -1,6 +1,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
     <TextView
         android:id="@+id/V_todo"
@@ -11,7 +13,6 @@
         android:textSize="26sp"
         android:textColor="@color/BLUE"
         android:layout_marginTop="11dp"
-        android:layout_marginLeft="15dp"
         android:layout_marginBottom="5dp"
         android:layout_alignParentStart="true"
         android:layout_marginStart="15dp" />
@@ -48,7 +49,7 @@
         android:text="Task will appear here"
         android:layout_gravity="center"
         android:layout_centerInParent="true"
-        android:textSize="18dp"
+        android:textSize="18sp"
         android:visibility="gone" />
 
     <ImageButton

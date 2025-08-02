@@ -327,10 +327,10 @@ class DownloadActivity : AppCompatActivity() {
     private fun applyFilter(filterOption: String) {
         val sortedFiles = when (filterOption) {
             "A-Z" -> fileList.sortedWith(compareBy { it["fileName"]?.let { name ->
-                name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
+                name.lowercase().toIntOrNull() ?: name.lowercase()
             } ?: "" })
             "Z-A" -> fileList.sortedWith(compareByDescending { it["fileName"]?.let { name ->
-                name.toLowerCase(Locale.getDefault()).toIntOrNull() ?: name.toLowerCase(Locale.getDefault())
+                name.lowercase().toIntOrNull() ?: name.lowercase()
             } ?: "" })
             "Numeric" -> fileList.sortedWith(compareBy { it["fileName"]?.toIntOrNull() ?: Int.MAX_VALUE })
             else -> fileList

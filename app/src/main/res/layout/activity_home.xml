@@ -1,5 +1,6 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorBackground">
@@ -37,6 +38,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="SPEECH TO TEXT"
+            android:textColor="@color/textSecondary"
             android:fontFamily="@font/poppins"
             android:textSize="18sp" />
     </LinearLayout>
@@ -63,6 +65,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="VOICE CALCULATOR"
+            android:textColor="@color/textSecondary"
             android:textSize="18sp" />
     </LinearLayout>
 
@@ -88,6 +91,7 @@
             android:layout_marginStart="16dp"
             android:fontFamily="@font/poppins"
             android:text="VOICE TO-DO LIST"
+            android:textColor="@color/textSecondary"
             android:textSize="18sp" />
     </LinearLayout>
 
